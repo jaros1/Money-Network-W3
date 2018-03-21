@@ -846,6 +846,7 @@ angular.module('MoneyNetworkW3')
                 var default_wallet_hub, default_hubs, hub, hubs, i ;
                 default_wallet_hub = {hub: '1HXzvtSLuvxZfh6LgdaqTk4FSVf7x8w7NJ', title: 'W3 Wallet data hub 1'} ;
                 console.log(pgm + 'ZeroFrame.site_info.content = ' + JSON.stringify(ZeroFrame.site_info.content));
+                if (!ZeroFrame.site_info.content.settings) return default_wallet_hub ;
                 default_hubs = ZeroFrame.site_info.content.settings.default_hubs ;
                 if (!default_hubs) return default_wallet_hub ;
                 hubs = [] ;
@@ -1205,7 +1206,7 @@ angular.module('MoneyNetworkW3')
                     my_wallet_hub = get_default_wallet_hub() ;
                     console.log(pgm + 'calling mergerSiteAdd with my_wallet_hub = ' + my_wallet_hub.hub) ;
 
-                    z_merger_site_add(my_wallet_hub.hub, function (res) {
+                    MoneyNetworkAPILib.z_merger_site_add(my_wallet_hub.hub, function (res) {
                         var pgm = service + '.get_my_wallet_hub.step_4_get_and_add_default_wallet_hub z_merger_site_add callback: ' ;
                         console.log(pgm + 'res = '+ JSON.stringify(res));
                         if (res == 'ok') {
@@ -1250,13 +1251,13 @@ angular.module('MoneyNetworkW3')
                     debug_seq1 = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, 'w2 query 2', 'dbQuery') ;
                     ZeroFrame.cmd("dbQuery", [w2_query_2], function (res) {
                         var pgm = service + '.get_my_wallet_hub.step_3_find_wallet_hub dbQuery callback 1: ';
-                        var i, wallet_hub_selected, get_and_add_default_wallet_hub, cleanup_old_wallet_hub, priorities, min_priority, priority;
+                        var i, cleanup_old_wallet_hub, priorities, min_priority, priority;
                         MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq1, (!res || res.error) ? 'Failed. error = ' + JSON.stringify(res) : 'OK. Returned ' + res.length + ' rows');
 
                         if (res.error) {
                             console.log(pgm + "wallet data hub lookup failed: " + res.error);
                             console.log(pgm + 'w2 query 2 = ' + w2_query_2);
-                            return get_and_add_default_wallet_hub() ;
+                            return step_4_get_and_add_default_wallet_hub() ;
                         }
                         if (res.length > 1) {
                             // user profile on more than one wallet data hub. delete content in older wallets before continue with latest updated wallet data hub
@@ -1505,6 +1506,7 @@ angular.module('MoneyNetworkW3')
                         wallet_data_hubs = [];
                         for (i = 0; i < all_hubs.length; i++) {
                             if (all_hubs[i].hub_type == 'user') continue;
+                            if (!all_hubs[i].hub_title) continue ;
                             if (all_hubs[i].hub_title.match(/^W3 /i)) wallet_data_hubs.push(all_hubs[i]);
                         }
                         console.log(pgm + 'wallet_data_hubs = ' + JSON.stringify(wallet_data_hubs));

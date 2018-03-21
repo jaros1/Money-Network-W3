@@ -6,7 +6,7 @@ Money-Network-W3 is ZeroNet merger site hub with an Ethereum wallet using [eithe
 
 Status: Not implemented.
 
-## Money-Network-W3 demo links
+## Money-Network-W3 demo links (todo: refresh list)
 - http://127.0.0.1:43110/1W3EthT2fgD5GQmKp3B3v2uC4qdn1nFpo/ ([ZeroNet](https://zeronet.readthedocs.io/en/latest/using_zeronet/installing/) required)
 - https://zeronet.korso.win/1W3EthT2fgD5GQmKp3B3v2uC4qdn1nFpo/ (proxy)
 - https://proxy1.zn.kindlyfire.me/1W3EthT2fgD5GQmKp3B3v2uC4qdn1nFpo/ (error)
