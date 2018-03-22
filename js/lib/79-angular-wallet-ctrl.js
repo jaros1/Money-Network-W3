@@ -321,7 +321,7 @@ angular.module('MoneyNetworkW3')
             if (self.wallet_info.status != 'Open') z_wrapper_notification(["info", "No bitcoin wallet found", 3000]) ;
             if (!self.send_address || !self.send_amount) z_wrapper_notification(["error", "Receiver and/or amount is missing", 5000]) ;
             if (!self.send_amount.match(/^[0-9]+$/)) return z_wrapper_notification(["error", "Amount must be an integer (Satoshi)", 5000]) ;
-            // manuel send money action in w2. confirm = true. ask user to confirm money transaction
+            // manuel send money action in w3. confirm = true. ask user to confirm money transaction
             btcService.send_money(self.send_address, self.send_amount, true, function (err, result) {
                 if (err) {
                     if ((typeof err == 'object') && err.message) err = err.message ;

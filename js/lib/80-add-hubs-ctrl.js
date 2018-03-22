@@ -24,7 +24,7 @@ angular.module('MoneyNetworkW3')
             console.log(controller + ': self.all_hubs.length = ' + self.all_hubs.length);
             // show change user profile input text
             for (i=0 ; i<all_hubs.length ; i++) {
-                if ((all_hubs[i].hub_type == 'wallet') && (all_hubs[i].hub_added) && all_hubs[i].hub_title && all_hubs[i].hub_title.match(/^w2 /i)) {
+                if ((all_hubs[i].hub_type == 'wallet') && (all_hubs[i].hub_added) && all_hubs[i].hub_title && all_hubs[i].hub_title.match(/^w3 /i)) {
                     self.wallet_data_hubs.push({hub: all_hubs[i].hub, text: hub_text(all_hubs[i])}) ;
                 }
             }

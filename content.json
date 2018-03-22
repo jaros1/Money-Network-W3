@@ -1,6 +1,7 @@
 {
  "address": "1W3EthT2fgD5GQmKp3B3v2uC4qdn1nFpo",
  "description": "Money Network - Wallet 3 - https://docs.ethers.io/ethers.js/ - runner jro",
+ "favicon": "favicon.ico",
  "files": {
   "MoneyNetworkW3.txt": {
    "sha512": "730b089c1cb83f5fa069f725f49b73323c9643dd3c11290adbaa2daf0e9a3219",
@@ -44,6 +45,14 @@
  },
  "inner_path": "content.json",
  "modified": 1521649405,
+ "settings": {
+  "default_hubs": {
+   "1W3Et1D5BnqfsXfx2kSx8T61fTPz5V2Ft": {
+    "description": "Money Network - W3 - Wallet data hub 1 - runner jro",
+    "title": "W3 Wallet data hub 1"
+   }
+  }
+ },
  "signers_sign": "GwPKgboLkGFE6h0HVAGlhsrXgXY3pch/cbf4FHOw/lhudc4P6uvjru47Hdr4Ej82Hr1oaz5C7xeSvf+5kB72wYU=",
  "signs": {
   "1W3EthT2fgD5GQmKp3B3v2uC4qdn1nFpo": "HNWeAcFVcfnpxJ51rZ1xyEWSpIErzU2nFbjA7ftmujHhIhCUDbUf2rc0YC7zaKC/KeZKxYS4unXYLCqQbBAK5/U="
