@@ -28,6 +28,9 @@ angular.module('MoneyNetworkW3')
                     self.wallet_data_hubs.push({hub: all_hubs[i].hub, text: hub_text(all_hubs[i])}) ;
                 }
             }
+
+
+
             moneyNetworkW3Service.get_my_wallet_hub(function(my_wallet_hub, other_wallet_hub, other_wallet_hub_title) {
                 var i ;
                 for (i=0 ; i<all_hubs.length ; i++) {

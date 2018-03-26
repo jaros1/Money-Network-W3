@@ -1133,11 +1133,13 @@ angular.module('MoneyNetworkW3')
             var get_my_wallet_hub_cbs = [] ; // callbacks waiting for query 17 to finish
             function get_my_wallet_hub (cb) {
                 var pgm = service + '.get_my_wallet_hub: ' ;
-                var wallet_data_hubs, step_1_get_w3_wallet_data_hubs, step_2_compare_json_and_files, step_3_find_wallet_hub,
-                    step_4_get_and_add_default_wallet_hub, step_5_wallet_hub_selected, step_6_run_callbacks ;
+                var wallet_data_hubs, step_1_wait_for_merger_permission, step_2_get_w3_wallet_data_hubs,
+                    step_3_compare_json_and_files, step_4_find_wallet_hub, step_5_get_and_add_default_wallet_hub,
+                    step_6_wallet_hub_selected, step_7_run_callbacks ;
                 if (z_cache.my_wallet_data_hub == true) {
                     // get_my_wallet_hub request is already running. please wait
                     get_my_wallet_hub_cbs.push(cb) ;
+                    console.log(pgm + 'wait. get_my_wallet_hub request is already running. ' + get_my_wallet_hub_cbs.length + ' requests in queue') ;
                     return ;
                 }
                 if (z_cache.my_wallet_data_hub) return cb(z_cache.my_wallet_data_hub, z_cache.other_wallet_data_hub, z_cache.other_wallet_data_hub_title) ;
@@ -1145,28 +1147,28 @@ angular.module('MoneyNetworkW3')
 
                 wallet_data_hubs = [] ;
 
-                // setup callback chain step 1-6
+                // setup callback chain step 1-7
 
-                step_6_run_callbacks = function () {
+                step_7_run_callbacks = function () {
                     // run callbacks. this and any pending callbacks
-                    var pgm = service + '.get_my_wallet_hub.step_6_run_callbacks: ' ;
+                    var pgm = service + '.get_my_wallet_hub.step_7_run_callbacks: ' ;
                     console.log(pgm + 'my_wallet_data_hub = ' + z_cache.my_wallet_data_hub + ', other_wallet_data_hub = ' + z_cache.other_wallet_data_hub) ;
                     cb(z_cache.my_wallet_data_hub, z_cache.other_wallet_data_hub, z_cache.other_wallet_data_hub_title) ;
                     while (get_my_wallet_hub_cbs.length) {
                         cb = get_my_wallet_hub_cbs.shift() ;
                         cb(z_cache.my_wallet_data_hub, z_cache.other_wallet_data_hub, z_cache.other_wallet_data_hub_title)
                     }
-                }; // step_6_run_callbacks
+                }; // step_7_run_callbacks
 
-                step_5_wallet_hub_selected = function () {
+                step_6_wallet_hub_selected = function () {
                     // wallet data hub was selected. find a random other wallet data hub. For wallet data hub lists. written to wallet.json file
-                    var pgm = service + '.get_my_wallet_hub.step_5_wallet_hub_selected: ' ;
+                    var pgm = service + '.get_my_wallet_hub.step_6_wallet_hub_selected: ' ;
                     var i ;
                     var other_wallet_data_hubs ;
                     if (wallet_data_hubs.length <= 1) {
                         z_cache.other_wallet_data_hub = z_cache.my_wallet_data_hub ;
                         delete z_cache.other_wallet_data_hub_title ;
-                        return step_6_run_callbacks() ;
+                        return step_7_run_callbacks() ;
                     }
                     other_wallet_data_hubs = [] ;
                     for (i=0 ; i<wallet_data_hubs.length ; i++) {
@@ -1180,7 +1182,7 @@ angular.module('MoneyNetworkW3')
                         // fix system error
                         z_cache.other_wallet_hub = z_cache.my_wallet_data_hub ;
                         delete z_cache.other_wallet_data_hub_title ;
-                        return step_6_run_callbacks() ;
+                        return step_7_run_callbacks() ;
                     }
                     i = Math.floor(Math.random() * other_wallet_data_hubs.length);
                     if (!other_wallet_data_hubs[i]) {
@@ -1190,40 +1192,45 @@ angular.module('MoneyNetworkW3')
                         // fix system error
                         z_cache.other_wallet_data_hub = z_cache.my_wallet_data_hub ;
                         delete z_cache.other_wallet_data_hub_title ;
-                        return step_6_run_callbacks() ;
+                        return step_7_run_callbacks() ;
                     }
                     z_cache.other_wallet_data_hub = other_wallet_data_hubs[i].hub ; // = data.json hub
                     z_cache.other_wallet_data_hub_title = other_wallet_data_hubs[i].title ; // = data.json hub_title
-                    return step_6_run_callbacks() ;
-                }; // step_5_wallet_hub_selected
+                    return step_7_run_callbacks() ;
+                }; // step_6_wallet_hub_selected
 
                 // normally never used. default_hubs should be in wallet_data_hubs array (from get_all_hubs call)
-                step_4_get_and_add_default_wallet_hub = function () {
-                    var pgm = service + '.get_my_wallet_hub.step_4_get_and_add_default_wallet_hub: ' ;
+                step_5_get_and_add_default_wallet_hub = function () {
+                    var pgm = service + '.get_my_wallet_hub.step_5_get_and_add_default_wallet_hub: ' ;
                     var my_wallet_hub ;
                     // no wallet_data_hubs (no merger site hubs were found)
                     my_wallet_hub = get_default_wallet_hub() ;
                     console.log(pgm + 'calling mergerSiteAdd with my_wallet_hub = ' + my_wallet_hub.hub) ;
 
                     MoneyNetworkAPILib.z_merger_site_add(my_wallet_hub.hub, function (res) {
-                        var pgm = service + '.get_my_wallet_hub.step_4_get_and_add_default_wallet_hub z_merger_site_add callback: ' ;
+                        var pgm = service + '.get_my_wallet_hub.step_5_get_and_add_default_wallet_hub z_merger_site_add callback: ' ;
                         console.log(pgm + 'res = '+ JSON.stringify(res));
                         if (res == 'ok') {
-                            z_cache.my_wallet_data_hub = my_user_hub.hub ;
-                            z_cache.my_wallet_data_hub_title = my_user_hub.hub_title ;
+                            z_cache.my_wallet_data_hub = my_wallet_hub.hub ;
+                            z_cache.my_wallet_data_hub_title = my_wallet_hub.hub_title ;
                             wallet_data_hubs.push(my_wallet_hub) ;
-                            step_5_wallet_hub_selected() ;
+                            step_6_wallet_hub_selected() ;
                             return ;
                         }
                         console.log(pgm + 'mergerSiteAdd failed. hub = ' + my_wallet_hub + '. error = ' + res) ;
 
                     }) ; // z_merger_site_add callback
 
-                }; // step_4_get_and_add_default_wallet_hub
+                }; // step_5_get_and_add_default_wallet_hub
 
-                step_3_find_wallet_hub = function () {
-                    var pgm = service + '.get_my_wallet_hub.step_3_find_wallet_hub: ';
+                step_4_find_wallet_hub = function () {
+                    var pgm = service + '.get_my_wallet_hub.step_4_find_wallet_hub: ';
                     var w3_query_2, debug_seq1, i ;
+
+                    if (!wallet_data_hubs.length) {
+                        console.log(pgm + 'wallet_data_hubs array is empty!') ;
+                        return step_5_get_and_add_default_wallet_hub() ;
+                    }
 
                     // find wallet data hub for current user
                     // - wallet.json file must exist
@@ -1249,14 +1256,14 @@ angular.module('MoneyNetworkW3')
                     console.log(pgm + 'w3 query 2 = ' + w3_query_2);
                     debug_seq1 = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, 'w3 query 2', 'dbQuery') ;
                     ZeroFrame.cmd("dbQuery", [w3_query_2], function (res) {
-                        var pgm = service + '.get_my_wallet_hub.step_3_find_wallet_hub dbQuery callback 1: ';
+                        var pgm = service + '.get_my_wallet_hub.step_4_find_wallet_hub dbQuery callback 1: ';
                         var i, cleanup_old_wallet_hub, priorities, min_priority, priority;
                         MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq1, (!res || res.error) ? 'Failed. error = ' + JSON.stringify(res) : 'OK. Returned ' + res.length + ' rows');
 
                         if (res.error) {
                             console.log(pgm + "wallet data hub lookup failed: " + res.error);
                             console.log(pgm + 'w3 query 2 = ' + w3_query_2);
-                            return step_4_get_and_add_default_wallet_hub() ;
+                            return step_5_get_and_add_default_wallet_hub() ;
                         }
                         if (res.length > 1) {
                             // user profile on more than one wallet data hub. delete content in older wallets before continue with latest updated wallet data hub
@@ -1277,7 +1284,7 @@ angular.module('MoneyNetworkW3')
                         if (res.length == 1) {
                             // old wallet
                             z_cache.my_wallet_data_hub = res[0].hub ; // return hub for last updated content.json
-                            return step_5_wallet_hub_selected() ;
+                            return step_6_wallet_hub_selected() ;
                         }
 
 
@@ -1312,21 +1319,24 @@ angular.module('MoneyNetworkW3')
                         console.log(pgm + 'hub = ' + z_cache.my_wallet_data_hub) ;
                         console.log(pgm + 'hub_title = ' + z_cache.my_wallet_data_hub_title) ;
 
-                        if (wallet_data_hubs[i].hub_added) step_5_wallet_hub_selected() ;
+                        if (wallet_data_hubs[i].hub_added) step_6_wallet_hub_selected() ;
                         else {
+                            console.log(pgm + 'adding new wallet data hub ' + z_cache.my_wallet_data_hub) ;
                             MoneyNetworkAPILib.z_merger_site_add(z_cache.my_wallet_data_hub, function (res) {
+                                var pgm = service + '.get_my_wallet_hub.step_4_find_wallet_hub z_merger_site_add callback 2: ';
+                                console.log(pgm + 'res = ' + JSON.stringify(res)) ;
                                 if (res != 'ok') console.log(pgm + 'error. mergerSiteAdd ' + z_cache.my_wallet_data_hub + ' failed. res = ' + JSON.stringify(res)) ;
-                                step_5_wallet_hub_selected() ;
-                            })
+                                step_6_wallet_hub_selected() ;
+                            }); // z_merger_site_add callback 2
                         }
 
                     }) ; // dbQuery callback 1
 
-                }; // step_3_find_wallet_hub
+                }; // step_4_find_wallet_hub
 
-                // compare "json" and "files" tables before running w3_query_2 in step_3_find_wallet_hubs. Should be identical. files table is no longer used in w3_query_2
-                step_2_compare_json_and_files = function () {
-                    var pgm = service + '.get_my_wallet_hub.step_2_compare_json_and_files: ' ;
+                // compare "json" and "files" tables before running w3_query_2 in step_4_find_wallet_hubs. Should be identical. files table is no longer used in w3_query_2
+                step_3_compare_json_and_files = function () {
+                    var pgm = service + '.get_my_wallet_hub.step_3_compare_json_and_files: ' ;
                     var w3_query_9, debug_seq1 ;
 
                     // with operator not supported. one query for each table (json and files)
@@ -1341,13 +1351,13 @@ angular.module('MoneyNetworkW3')
                     console.log(pgm + 'mn query 9 = ' + w3_query_9) ;
                     debug_seq1 = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, 'w3 query 9', 'dbQuery') ;
                     ZeroFrame.cmd("dbQuery", [w3_query_9], function (res1) {
-                        var pgm = service + '.get_my_wallet_hub.step_2_compare_json_and_files dbQuery callback 1: ';
+                        var pgm = service + '.get_my_wallet_hub.step_3_compare_json_and_files dbQuery callback 1: ';
                         var w3_query_10, debug_seq2, res, i, index, indexed_by_modified ;
                         MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq1, (!res1 || res1.error) ? 'Failed. error = ' + JSON.stringify(res1) : 'OK');
                         if (res1.error) {
                             console.log(pgm + "json and files compare failed: " + res1.error);
                             console.log(pgm + 'w3 query 9 = ' + w3_query_9);
-                            return step_3_find_wallet_hubs() ;
+                            return step_4_find_wallet_hubs() ;
                         }
                         res = {} ;
                         indexed_by_modified = {} ;
@@ -1374,13 +1384,13 @@ angular.module('MoneyNetworkW3')
                         console.log(pgm + pgm + 'w3 query 10 = ' + w3_query_10) ;
                         debug_seq2 = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, 'mn query 19', 'dbQuery') ;
                         ZeroFrame.cmd("dbQuery", [w3_query_10], function (res2) {
-                            var pgm = service + '.get_my_wallet_hub.step_2_compare_json_and_files dbQuery callback 2: ';
+                            var pgm = service + '.get_my_wallet_hub.step_3_compare_json_and_files dbQuery callback 2: ';
                             var i, index, hub, missing_rows, dictionaries, modified, sign, wallet_data_hub ;
                             MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq2, (!res2 || res2.error) ? 'Failed. error = ' + JSON.stringify(res2) : 'OK');
                             if (res2.error) {
                                 console.log(pgm + "json and files compare failed: " + res2.error);
                                 console.log(pgm + 'w3 query 10 = ' + w3_query_10);
-                                return step_3_find_wallet_hub();
+                                return step_4_find_wallet_hub();
                             }
                             for (i=0 ; i<res2.length ; i++) {
                                 index = res2[i].directory + '/' + res2[i].file_name ;
@@ -1407,7 +1417,7 @@ angular.module('MoneyNetworkW3')
                                 if (!wallet_data_hub) continue ; // ignore - not a W3 wallet Data Hub - also ignore just added W3 wallet Data Hubs
                                 missing_rows.push(res[index]) ;
                             }
-                            if (!missing_rows.length) return step_3_find_wallet_hub() ; // everything is OK. next step
+                            if (!missing_rows.length) return step_4_find_wallet_hub() ; // everything is OK. next step
 
                             // inconsistency between json and files!
                             console.log(pgm + 'warning. difference between json and files rows. could be missing sign or manuel deleted files. signing content.json files in modified order to fix this') ;
@@ -1428,7 +1438,7 @@ angular.module('MoneyNetworkW3')
 
                             // loop. sign each content.json file (remove files_optional and add optional)
                             sign = function () {
-                                var pgm = service + '.get_my_wallet_hub.step_2_compare_json_and_files.sign: ';
+                                var pgm = service + '.get_my_wallet_hub.step_3_compare_json_and_files.sign: ';
                                 var dictionary, hub, inner_path  ;
                                 dictionary = dictionaries.shift() ;
                                 hub = dictionary.substr(0,dictionary.indexOf('/')) ;
@@ -1437,7 +1447,7 @@ angular.module('MoneyNetworkW3')
                                 inner_path = 'merged-' + get_merged_type() + '/' + dictionary + '/content.json' ;
 
                                 z_file_get(pgm, {inner_path: inner_path, required: true}, function (content_str) {
-                                    var pgm = service + '.get_my_wallet_hub.step_2_compare_json_and_files.sign z_file_get callback 1: ';
+                                    var pgm = service + '.get_my_wallet_hub.step_3_compare_json_and_files.sign z_file_get callback 1: ';
                                     var content, json_raw, debug_seq1 ;
                                     if (content_str) {
                                         try {
@@ -1454,26 +1464,26 @@ angular.module('MoneyNetworkW3')
                                     // 2: write content.json
                                     json_raw = unescape(encodeURIComponent(JSON.stringify(content)));
                                     z_file_write(pgm, inner_path, btoa(json_raw), {}, function (res) {
-                                        var pgm = service + '.get_my_wallet_hub.step_2_compare_json_and_files.sign fileWrite callback 2: ';
+                                        var pgm = service + '.get_my_wallet_hub.step_3_compare_json_and_files.sign fileWrite callback 2: ';
                                         var debug_seq2 ;
                                         if (res != 'ok') {
                                             console.log(pgm + 'Error: ' + inner_path + ' fileWrite failed. res = ' + JSON.stringify(res));
-                                            return step_3_find_wallet_hub() ; // error - continue with next step
+                                            return step_4_find_wallet_hub() ; // error - continue with next step
                                         }
                                         // 3: sign
                                         // debug_seq2 = MoneyNetworkHelper.debug_z_api_operation_start('z_site_publish', pgm + inner_path + ' sign') ;
                                         debug_seq2 = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, inner_path, 'siteSign') ;
                                         ZeroFrame.cmd("siteSign", {inner_path: inner_path, remove_missing_optional: true}, function (res) {
-                                            var pgm = service + '.get_my_wallet_hub.step_2_compare_json_and_files.sign siteSign callback 3: ';
+                                            var pgm = service + '.get_my_wallet_hub.step_3_compare_json_and_files.sign siteSign callback 3: ';
                                             // MoneyNetworkHelper.debug_z_api_operation_end(debug_seq2);
                                             MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq2, res);
                                             if (res != 'ok') {
                                                 console.log(pgm + inner_path + ' siteSign failed. error = ' + JSON.stringify(res));
-                                                return step_3_find_wallet_hub() ; // error - continue with next step;
+                                                return step_4_find_wallet_hub() ; // error - continue with next step;
                                             }
 
                                             // sign ok
-                                            if (!dictionaries.length) return step_3_find_wallet_hub() ; // done - continue with next step
+                                            if (!dictionaries.length) return step_4_find_wallet_hub() ; // done - continue with next step
                                             // next sign in 1 second to keep content.json modified sequence
                                             setTimeout(sign, 1000) ;
 
@@ -1492,15 +1502,15 @@ angular.module('MoneyNetworkW3')
 
                     }) ; // dbQuery callback 1
 
-                } ; // step_2_compare_json_and_files
+                } ; // step_3_compare_json_and_files
 
-                // step 1 : get a list of W3 wallet data hubs. title or description matches /w3 /i. used for new W3 users
-                step_1_get_w3_wallet_data_hubs = function() {
-                    var pgm = service + '.get_my_wallet_hub.step_1_get_w3_wallet_data_hubs: ' ;
+                // step 2 : get a list of W3 wallet data hubs. title or description matches /w3 /i. used for new W3 users
+                step_2_get_w3_wallet_data_hubs = function() {
+                    var pgm = service + '.get_my_wallet_hub.step_2_get_w3_wallet_data_hubs: ' ;
                     // get a list of MN wallet data hubs
                     // merger sites with title starting with W3
                     MoneyNetworkAPILib.get_all_hubs(false, function (all_hubs) {
-                        var pgm = service + '.get_my_wallet_hub get_all_hubs callback 1: ';
+                        var pgm = service + '.get_my_wallet_hub.step_2_get_w3_wallet_data_hubs get_all_hubs callback 1: ';
                         var  i;
                         wallet_data_hubs = [];
                         for (i = 0; i < all_hubs.length; i++) {
@@ -1510,12 +1520,27 @@ angular.module('MoneyNetworkW3')
                         }
                         console.log(pgm + 'wallet_data_hubs = ' + JSON.stringify(wallet_data_hubs));
                         // next step
-                        step_2_compare_json_and_files() ;
+                        step_3_compare_json_and_files() ;
                     }) ;
-                }; // step_1_get_w3_wallet_data_hubs
+                }; // step_2_get_w3_wallet_data_hubs
 
-                // start callback chain step 1-6
-                step_1_get_w3_wallet_data_hubs() ;
+                // only first contact. wait for merger permission before calling MoneyNetworkAPILib.get_all_hubs
+                step_1_wait_for_merger_permission = function() {
+                    if (ZeroFrame.site_info &&
+                        ZeroFrame.site_info.settings &&
+                        ZeroFrame.site_info.settings.permissions &&
+                        (ZeroFrame.site_info.settings.permissions.indexOf("Merger:MoneyNetwork") != -1)) {
+                        // everything is OK. ZeroFrame ready and merger permission has been granted
+                        console.log(pgm + 'merger permission OK. continue with step_2_get_w3_wallet_data_hubs') ;
+                        return step_2_get_w3_wallet_data_hubs() ;
+                    }
+                    // wait
+                    console.log(pgm + 'waiting for ZeroFrame or merger permission') ;
+                    $timeout(step_1_wait_for_merger_permission, 1000) ;
+                } ; // step_1_wait_for_merger_permission
+
+                // start callback chain step 1-7
+                step_1_wait_for_merger_permission() ;
 
             } // get_my_wallet_hub
 
@@ -1797,13 +1822,21 @@ angular.module('MoneyNetworkW3')
 
             } // z_publish
 
-
             // inject wallet z_publish function into MoneyNetworkAPILib. used for waiting_for_file notifications (hanging fileGet operations)
             function waiting_for_file_publish (request_filename) {
                 if (status.restoring) return ; // restoring backup
                 z_publish({publish: true, reason: (request_filename ? request_filename : 'waiting_for_file')}) ;
             }
             MoneyNetworkAPILib.config({waiting_for_file_publish: waiting_for_file_publish}) ;
+
+            function run_pending_publish (reason, cb) {
+                var pgm = service + '.run_pending_publish: ' ;
+                if (!cb) cb = function() {} ;
+                if (!z_publish_pending) return ;
+                z_publish({publish: true, reason: reason}, function (res) {
+                    cb(res) ;
+                }) ;
+            } // run_pending_publish
 
             var get_content_json_cbs = [] ; // callbacks waiting for first get_content_json request to finish
             function get_content_json (cb) {
@@ -1862,6 +1895,7 @@ angular.module('MoneyNetworkW3')
                     var directory, pos, w3_query_11, debug_seq ;
 
                     // does content.json exist? slow wallet.json fileGet request if content.json does not yet exist
+                    // todo: fixed an error in MoneyNetworkAPILib. Maybe w2_query_11 is no longer needed!
                     pos = user_path.indexOf('/') ;
                     directory = user_path.substr(pos+1, user_path.length-pos-2) ;
                     // console.log(pgm + 'directory = ' + JSON.stringify(directory)) ;
@@ -1927,10 +1961,8 @@ angular.module('MoneyNetworkW3')
                     var inner_path, debug_seq ;
                     inner_path = user_path + 'wallet.json' ;
                     // console.log(pgm + 'calling fileWrite. path = ' + inner_path) ;
-                    debug_seq = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, inner_path, 'fileWrite') ;
                     z_file_write(pgm, inner_path, btoa(json_raw), {}, function (res) {
                         var pgm = service + '.write_wallet_json fileWrite callback 2: ';
-                        MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq, res == 'ok' ? 'OK' : 'Failed. error = ' + JSON.stringify(res));
                         console.log(pgm + 'res = ' + JSON.stringify(res)) ;
                         if (res != 'ok') return cb(res) ;
                         cb(res);
@@ -6306,8 +6338,8 @@ angular.module('MoneyNetworkW3')
                     ZeroFrame.cmd("wrapperPermissionAdd", "Merger:MoneyNetwork", function (res) {
                         console.log(pgm + 'res = ', JSON.stringify(res));
                         if (res == "Granted") {
-                            request2(cb);
                             status.merger_permission = 'Granted';
+                            request2(cb);
                         }
                         else cb(false);
                     });
@@ -6315,18 +6347,32 @@ angular.module('MoneyNetworkW3')
                 request2 = function (cb) {
                     var pgm = service + '.check_merger_permission.request2: ';
                     get_my_wallet_hub(function (hub, other_wallet_data_hub, other_wallet_data_hub_title) {
-                        var debug_seq ;
-                        debug_seq = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, null, 'mergerSiteAdd') ;
-                        ZeroFrame.cmd("mergerSiteAdd", [hub], function (res) {
-                            MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq, res == 'ok' ? 'OK' : 'Failed. res = ' + JSON.stringify(res)) ;
-                            console.log(pgm + 'res = ', JSON.stringify(res));
-                            cb((res == 'ok'));
-                        });
+
+                        // https://github.com/jaros1/Money-Network-W3/issues/1#issuecomment-375584078
+                        // todo: this change should also be implemented in W2
+                        //var debug_seq ;
+                        //debug_seq = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, null, 'mergerSiteAdd') ;
+                        //ZeroFrame.cmd("mergerSiteAdd", [hub], function (res) {
+                        //    MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq, res == 'ok' ? 'OK' : 'Failed. res = ' + JSON.stringify(res)) ;
+                        //    console.log(pgm + 'res = ', JSON.stringify(res));
+                        //    cb((res == 'ok'));
+                        //});
+
+                        //// add wallet data hub and wait for wallet data hub to be ready
+                        //MoneyNetworkAPILib.z_merger_site_add(hub, function (res) {
+                        //    console.log(pgm + 'res = ', JSON.stringify(res));
+                        //    cb((res == 'ok'));
+                        //}) ;
+
+                        // everything should be OK. get_my_wallet_hub checks and adds missing wallet data hubs
+
+                        cb(true) ;
+
                     });
                 }; // request2
 
                 // wait for ZeroFrame.site_info to be ready
-                var retry_check_merger_permission = function () {
+                retry_check_merger_permission = function () {
                     check_merger_permission(cb)
                 };
                 if (!ZeroFrame.site_info) {
@@ -6926,7 +6972,8 @@ angular.module('MoneyNetworkW3')
                 move_user_profile: move_user_profile,
                 get_my_wallet_hub: get_my_wallet_hub,
                 set_help: set_help,
-                get_help: get_help
+                get_help: get_help,
+                run_pending_publish: run_pending_publish
             };
 
             // end W3Service

@@ -44,21 +44,25 @@ angular.module('MoneyNetworkW3')
                 if (self.status.save_login == null) {
                     // error
                     self.status.save_login_disabled = false ;
+                    W3Service.run_pending_publish(pgm) ;
                     return ;
                 }
                 if (self.status.save_login == '0') {
                     // OK: wallet login is not saved for this cert_user_id in this browser
                     self.status.save_login_disabled = false ;
+                    W3Service.run_pending_publish(pgm) ;
                     return ;
                 }
                 if (self.status.save_login == '1') {
                     // OK: wallet login was restored in initialize
                     self.status.save_login_disabled = false ;
+                    W3Service.run_pending_publish(pgm) ;
                     return ;
                 }
                 if (self.status.restoring) {
                     // stop. restoring backup
                     self.status.save_login_disabled = false ;
+                    W3Service.run_pending_publish(pgm) ;
                     return ;
                 }
 
@@ -68,6 +72,7 @@ angular.module('MoneyNetworkW3')
                     console.log(pgm + 'wallet_id = ' + wallet_id + ', wallet_password = ' + wallet_password + ', error = ' + error) ;
                     if (error) z_wrapper_notification(['error', error, 10000]) ;
                     self.status.save_login_disabled = false ;
+                    W3Service.run_pending_publish(pgm) ;
                     console.log(pgm + 'self.status.save_login_disabled = ' + self.status.save_login_disabled) ;
                     $rootScope.$apply() ;
                     console.log(pgm + 'self.status.save_login_disabled = ' + self.status.save_login_disabled) ;
@@ -336,7 +341,8 @@ angular.module('MoneyNetworkW3')
         // get list of screen dumps in screendumps folder
         self.screendumps = [] ;
         (function () {
-            MoneyNetworkAPILib.z_file_get(controller, {inner_path: 'screendumps/content.json'}, function (content_str) {
+            var pgm = controller + ' start:' ;
+            MoneyNetworkAPILib.z_file_get(pgm, {inner_path: 'screendumps/content.json'}, function (content_str) {
                 var pgm = controller + ' start z_file_get callback 1: ';
                 var content, files, filename, text ;
                 if (!content_str) {
