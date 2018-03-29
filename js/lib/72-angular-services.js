@@ -1,6 +1,6 @@
 angular.module('MoneyNetworkW3')
 
-    // btcService and MoneyNetworkW3Service
+    // etherService and MoneyNetworkW3Service
     // abbreviations:
     // - MN - MoneyNetwork - main site
     // - W3 - MoneyNetworkW3 - plugin wallet site with ether
@@ -25,16 +25,17 @@ angular.module('MoneyNetworkW3')
         }
     }])
 
-    .factory('btcService', ['$timeout', '$rootScope', '$window', '$location',
+    .factory('etherService', ['$timeout', '$rootScope', '$window', '$location',
         function ($timeout, $rootScope, $window, $location) {
             var service = 'MoneyNetworkW3Service';
             console.log(service + ' loaded');
 
-            // https://www.blocktrail.com/api/docs ==>
-
-            var API_Key = '44bb2b39eaf2a164afe164560c725b4bf2842698' ;
-            var API_Secret = 'f057354b22d9cbf9098e4c2db8e1643a3342c6fa' ;
-            var api_client, bitcoin_wallet, bitcoin_wallet_backup_info ;
+            // https://docs.ethers.io/ethers.js ==>
+            var Wallet = ethers.Wallet;
+            var providers = ethers.providers;
+            var network = providers.networks.ropsten; // Ropsten (the test network)
+            var provider = providers.getDefaultProvider(network) ;
+            var ether_wallet ;
 
             var wallet_info = {
                 status: 'n/a',
@@ -45,79 +46,95 @@ angular.module('MoneyNetworkW3')
                 return wallet_info ;
             }
 
-            function init_api_client () {
-                if (api_client) return ;
-                api_client = blocktrail.BlocktrailSDK({
-                    apiKey: API_Key,
-                    apiSecret: API_Secret,
-                    network: 'BTC',
-                    testnet: true // test Bitcoins
-                });
-                return api_client ;
-            }
+            function createRandomWallet (status, cb) {
+                var pgm = service + '.createRandomWallet: ' ;
+                if (ether_wallet) return cb('Ether wallet is already open') ;
+                if (status.login_method != '2') return cb('Error. login_method must be 2 to create a random ether wallet') ;
+                ether_wallet = Wallet.createRandom() ;
+                ether_wallet.provider = provider;
+                status.login_method = '1' ;
+                status.wallet_private_key = ether_wallet.privateKey ;
+                wallet_info.status = 'Open' ;
+                cb(null) ;
+            } // createRandomWallet
 
-            function create_new_wallet (wallet_id, wallet_password, cb) {
-                var pgm = service + '.create_new_wallet: ' ;
-                if (!wallet_id || !wallet_password) return cb('Wallet ID and/or password is missing') ;
-                init_api_client() ;
-                api_client.createNewWallet(wallet_id, wallet_password, function (err, wallet, backupInfo) {
-                    if (err) return ;
-                    bitcoin_wallet = wallet ;
-                    bitcoin_wallet_backup_info = backupInfo ;
-                    console.log('Backup info = ' + CircularJSON.stringify(backupInfo)) ;
-                    wallet_info.status = 'Open' ;
-                    get_balance(cb) ;
-                }).then(
-                    function () {
-                        console.log(pgm + 'success: arguments = ', arguments);
-                    },
-                    function (error) {
-                        console.log(pgm + 'error: arguments = ', arguments);
-                        cb(error.message);
-                    }
-                ) ;
-            } // create_new_wallet
 
-            function init_wallet(wallet_id, wallet_password, cb) {
-                var pgm = service + '.init_wallet: ';
-                if (!wallet_id || !wallet_password) return cb('Wallet ID and/or password is missing');
-                init_api_client();
-                api_client.initWallet(
-                    {identifier: wallet_id, passphrase: wallet_password},
-                    function (err, wallet, primaryMnemonic, backupMnemonic, blocktrailPubKeys) {
-                        if (err) return;
-                        bitcoin_wallet = wallet;
-                        bitcoin_wallet_backup_info = null;
-                        wallet_info.status = 'Open';
-                        get_balance(cb);
-                    }).then(
-                    function () {
-                        console.log(pgm + 'success: arguments = ', arguments);
-                    },
-                    function (error) {
-                        console.log(pgm + 'error: arguments = ', arguments);
-                        cb(error.message);
-                    }
-                );
-            } // init_wallet
+            function is_login_info_missing (status) {
+                var pgm = service + '.openWallet: ';
+                if (status.login_method == '1') {
+                    // open with private key
+                    if (!status.wallet_private_key) return 'Please enter Wallet private key' ;
+                }
+                else if (status.login_method == '3') {
+                    // open encrypted JSON wallet
+                    if (!status.wallet_encrypted_json) return 'Please enter encrypted JSON' ;
+                    if (!status.wallet_password) return 'Please password for encrypted JSON' ;
+                }
+                else if (status.login_method == '4') {
+                    // Mnemonic Wallet
+                    if (!status.wallet_mnemonic) return 'Please enter wallet mnemonic' ;
+                }
+                else if (status.login_method == '5') {
+                    // Brain wallet
+                    if (!status.wallet_username) return 'Please enter wallet username' ;
+                    if (!status.wallet_password) return 'Please enter wallet password' ;
+                }
+                else return 'Cannot open wallet for login_method ' + JSON.stringify(status.login_method) ;
+                return ;
+            } // is_login_info_missing
+
+
+            function openWallet(status, cb) {
+                var pgm = service + '.openWallet: ';
+                var error ;
+                if (ether_wallet) return cb('Ether wallet is already open') ;
+                error = is_login_info_missing(status) ;
+                if (error) return cb(error) ;
+                if (status.login_method == '1') {
+                    // open with private key
+                    ether_wallet = new Wallet(status.wallet_private_key) ;
+                }
+                else if (status.login_method == '3') {
+                    // open encrypted JSON wallet
+                    ether_wallet = Wallet.fromEncryptedWallet(status.wallet_encrypted_json, status.wallet_password) ;
+                    ether_wallet.provider = provider;
+                }
+                else if (status.login_method == '4') {
+                    // Mnemonic Wallet
+                    ether_wallet = Wallet.fromMnemonic( status.wallet_mnemonic) ;
+                    ether_wallet.provider = provider;
+                }
+                else if (status.login_method == '5') {
+                    // Brain wallet
+                    ether_wallet = Wallet.fromBrainWallet(status.wallet_username, status.wallet_password) ;
+                }
+                if (!ether_wallet) return cb('Open wallet failed') ;
+                ether_wallet.provider = provider;
+                wallet_info.status = 'Open' ;
+                get_balance(cb) ;
+            } // openWallet
 
             function get_balance (cb) {
-                bitcoin_wallet.getBalance(
-                    function(err, confirmedBalance, unconfirmedBalance) {
-                        if (err) return cb(err) ;
-                        wallet_info.confirmed_balance = blocktrail.toBTC(confirmedBalance) ;
-                        // console.log('Balance: ', wallet_info.confirmed_balance);
-                        wallet_info.unconfirmed_balance = blocktrail.toBTC(unconfirmedBalance) ;
-                        // console.log('Unconfirmed Balance: ', wallet_info.unconfirmed_balance);
-                        cb(null) ;
-                    }
-                );
-            }
+                var pgm = service + '.get_balance: ' ;
+                // get latest unconfirmed balance (latest block)
+                ether_wallet.getBalance().then(function(unconfirmed_balance) {
+                    wallet_info.unconfirmed_balance = unconfirmed_balance.toString(18) ;
+                    console.log(pgm + 'unconfirmed balance = ', wallet_info.unconfirmed_balance);
+                    provider.getBlockNumber().then(function(blockNumber) {
+                        console.log(pgm + "Current block number: " + blockNumber);
+                        // get comfirmed balance. 12 blocks
+                        ether_wallet.getBalance(blockNumber-12).then(function(confirmed_balance) {
+                            wallet_info.confirmed_balance = confirmed_balance.toString(18) ;
+                            console.log(pgm + 'confirmed balance = ', wallet_info.confirmed_balance);
+                            cb(null) ;
+                        }) ; // getBalance callback 3 (confirmed)
+                    }); // getBlockNumber callback 2
+                }); // getBalance callback 1 (unconfirmed)
+            } // get_balance
 
             function close_wallet (cb) {
-                if (!bitcoin_wallet) return cb('Wallet not open. Please log in first') ;
-                bitcoin_wallet = null ;
-                bitcoin_wallet_backup_info = null ;
+                if (!ether_wallet) return cb('Wallet not open. Please log in first') ;
+                ether_wallet = null ;
                 wallet_info.status = 'n/a' ;
                 wallet_info.confirmed_balance = null ;
                 wallet_info.unconfirmed_balance = null ;
@@ -125,14 +142,14 @@ angular.module('MoneyNetworkW3')
             } // close_wallet
 
             function delete_wallet (cb) {
-                if (!bitcoin_wallet) return cb('Wallet not open. Please log in first') ;
+                if (!ether_wallet) return cb('Wallet not open. Please log in first') ;
                 // confirm operation!
                 ZeroFrame.cmd("wrapperConfirm", ["Delele wallet?", "OK"], function (confirm) {
                     if (!confirm) return cb('Wallet was not deleted')  ;
                     // delete wallet
-                    bitcoin_wallet.deleteWallet(function (error, success) {
+                    ether_wallet.deleteWallet(function (error, success) {
                         if (success) {
-                            bitcoin_wallet = null ;
+                            ether_wallet = null ;
                             wallet_info.status = 'n/a' ;
                             wallet_info.confirmed_balance = null ;
                             wallet_info.unconfirmed_balance = null ;
@@ -147,8 +164,8 @@ angular.module('MoneyNetworkW3')
             // get_new_address (receive money)
             function get_new_address (cb) {
                 var pgm = service + '.get_new_address: ' ;
-                if (!bitcoin_wallet) return cb('No bitcoin wallet found') ;
-                bitcoin_wallet.getNewAddress(cb)
+                if (!ether_wallet) return cb('No bitcoin wallet found') ;
+                ether_wallet.getNewAddress(cb)
                     .then(function () {
                         console.log(pgm + 'success: arguments = ', arguments);
                     },
@@ -164,7 +181,7 @@ angular.module('MoneyNetworkW3')
             function send_money (address, amount, confirm, cb) {
                 var pgm = service + '.send_money: ' ;
                 var satoshi, btc, optional_confirm_send_money ;
-                if (!bitcoin_wallet) return cb('No bitcoin wallet found') ;
+                if (!ether_wallet) return cb('No bitcoin wallet found') ;
                 satoshi = parseInt(amount) ;
                 btc = satoshi / one_hundred_millions ;
 
@@ -179,14 +196,13 @@ angular.module('MoneyNetworkW3')
                 optional_confirm_send_money(function() {
                     var payment = {} ;
                     payment[address] = satoshi ;
-                    bitcoin_wallet.pay(payment, null, false, true, blocktrail.Wallet.FEE_STRATEGY_BASE_FEE, cb) ;
+                    ether_wallet.pay(payment, null, false, true, blocktrail.Wallet.FEE_STRATEGY_BASE_FEE, cb) ;
                 }) ;
 
             } // send_money
 
             function get_transaction (transactionid, cb) {
-                init_api_client() ;
-                api_client.transaction(transactionid, cb) ;
+                transaction(transactionid, cb) ;
             } // get_transaction
 
             // <== https://www.blocktrail.com/api/docs
@@ -194,8 +210,9 @@ angular.module('MoneyNetworkW3')
             // export
             return {
                 get_wallet_info: get_wallet_info,
-                create_new_wallet: create_new_wallet,
-                init_wallet: init_wallet,
+                createRandom: createRandomWallet,
+                is_login_info_missing: is_login_info_missing,
+                openWallet: openWallet,
                 get_balance: get_balance,
                 close_wallet: close_wallet,
                 delete_wallet: delete_wallet,
@@ -205,12 +222,12 @@ angular.module('MoneyNetworkW3')
                 one_hundred_millions: one_hundred_millions
             };
 
-            // end btcService
+            // end etherService
         }])
 
 
-    .factory('MoneyNetworkW3Service', ['$timeout', '$rootScope', '$window', '$location', 'btcService', 'brFilter',
-        function ($timeout, $rootScope, $window, $location, btcService, br) {
+    .factory('MoneyNetworkW3Service', ['$timeout', '$rootScope', '$window', '$location', 'etherService', 'brFilter',
+        function ($timeout, $rootScope, $window, $location, etherService, br) {
             var service = 'MoneyNetworkW3Service';
             console.log(service + ' loaded');
 
@@ -224,8 +241,8 @@ angular.module('MoneyNetworkW3')
 
 
             // for MN <=> W3 integration
-            var wallet_info = btcService.get_wallet_info() ;
-            var one_hundred_millions = btcService.one_hundred_millions ;
+            var wallet_info = etherService.get_wallet_info() ;
+            var one_hundred_millions = etherService.one_hundred_millions ;
             // console.log(service + ': one_hundred_millions = ' + one_hundred_millions) ;
 
             // localStorage wrapper. avoid some ZeroNet callbacks. cache localStorage in ls hash
@@ -472,7 +489,7 @@ angular.module('MoneyNetworkW3')
                     user_login_info = ls.save_login[auth_address] ;
                     if (!user_login_info) return cb(null, null, 'Wallet login for ' + auth_address + ' was not found') ;
                     if (auth_address == 'n/a') {
-                        // no ZeroNet certificate. login is saved unencrypted in ls
+                        // no ZeroNet certificate. login is saved unencrypted in ls. not recommended
                         login = user_login_info.login ;
                         console.log(pgm + 'unencrypted login = ' + JSON.stringify(login)) ;
                         if (!login) return cb(null, null, 'Wallet login for ' + auth_address + ' was not found') ;
@@ -1998,9 +2015,9 @@ angular.module('MoneyNetworkW3')
                         wallet.wallet_title = ZeroFrame.site_info.content.title;
                         wallet.wallet_description = ZeroFrame.site_info.content.description;
                         wallet.currencies = [{
-                            code: 'ETH',
-                            name: 'Ether',
-                            url: 'https://www.ethereum.org/',
+                            code: 'tETH',
+                            name: 'Test ether',
+                            url: 'http://faucet.ropsten.be:3001/',
                             fee_info: 'See https://ethgasstation.info/',
                             units: [
                                 { unit: 'ether', factor: 1, decimals: 18 },
@@ -2518,64 +2535,6 @@ angular.module('MoneyNetworkW3')
                 });
             } // check_port
 
-            // send money error: Origin is not allowed by Access-Control-Allow-Origin
-            // check money error: {"crossDomain":true}
-            // open wallet error: Origin is not allowed by Access-Control-Allow-Origin
-            // halt message processing and alert user in a confirm dialog
-            function btc_cross_domain_error (error, restart_receive_message, session_info, group_debug_seq) {
-                save_w_session(session_info, {group_debug_seq: group_debug_seq}, function () {
-                    var pgm = service + '.btc_cross_domain_error save_w_session callback 1/' + group_debug_seq + ': ';
-                    var message, confirm_status, request2 ;
-                    console.log(pgm + 'saved session_info in ls');
-                    message = ['Communication with btc.com failed', error, 'Origin is not allowed by Access-Control-Allow-Origin', 'Please disable VPN and press OK'] ;
-
-                    // confirm dialog in W3 and in MN
-                    // open two confirm dialog boxes.
-                    // one here in W3 session. The other in MN session
-                    confirm_status = {done: false};
-                    // path 1) confirm box in w3
-                    ZeroFrame.cmd("wrapperConfirm", [message.join('<br>'), 'OK'], function (confirm) {
-                        if (confirm_status.done) return; // confirm dialog done (OK or timeout)
-                        confirm_status.done = true ;
-                        if (!confirm) return ; // do nothing.
-                        // confirmed. restart processing
-                        restart_receive_message();
-                    }) ;
-                    // path 2) confirm box in MN
-                    request2 = {
-                        msgtype: 'confirm',
-                        message: message.join('<br>'),
-                        button_caption: 'OK'
-                    };
-                    console.log(pgm + 'sending request2 = ' + JSON.stringify(request2));
-                    // timeout 600 seconds = 10 minutes
-                    encrypt2.send_message(request2, {response: 600000, group_debug_seq: group_debug_seq}, function (response) {
-                        try {
-                            var pgm = service + '.btc_cross_domain_error send_message callback 2/' + group_debug_seq + ': ';
-                            if (confirm_status.done) return; // confirm dialog done (OK or timeout)
-                            confirm_status.done = true ;
-                            // response should be OK or timeout
-                            if (response && !response.error) {
-                                // confirmed. continue
-                                return restart_receive_message() ;
-                            }
-                            if (response && response.error && response.error.match(/^Timeout /)) {
-                                // OK. timeout after 600 seconds. No or late user feedback in MN session
-                                return;
-                            }
-                            // unexpected response from confirm request
-                            console.log(pgm + 'error: response = ' + JSON.stringify(response)) ;
-                        }
-                        catch (e) {
-                            console.log(pgm + e.message);
-                            console.log(e.stack);
-                            report_error(pgm, ["JS exception", e.message], {log: false, group_debug_seq: group_debug_seq}) ;
-                        }
-                    }); // send_message callback 2
-
-                }) ; // save_w_session callback 1
-            }  // btc_cross_domain_error
-
 
             // workaround used in receive w3_check_mt and w3_start_mt messages
             // receiving incoming messages in wrong order. pubkeys message is required
@@ -2927,11 +2886,11 @@ angular.module('MoneyNetworkW3')
                                     // wallet not open (not created, not logged in etc)
                                     if (!status.permissions.open_wallet) return send_response('open_wallet operation is not authorized');
                                     if (!request.open_wallet) return send_response('Wallet is not open and open_wallet was not requested');
-                                    else if (!status.wallet_id || !status.wallet_password) return send_response('Wallet is not open and no wallet login was found');
+                                    else if (etherService.is_login_info_missing(status)) return send_response('Wallet is not open and no wallet login was found');
                                     else if (request.close_wallet && !status.permissions.close_wallet) return send_response('close_wallet operation was requested but is not authorized');
                                     else {
                                         // open test bitcoin wallet (also get_balance request)
-                                        btcService.init_wallet(status.wallet_id, status.wallet_password, function (error) {
+                                        etherService.openWallet(status, function (error) {
                                             try {
                                                 if (error) {
                                                     // open wallet or get_balance request failed
@@ -2939,7 +2898,7 @@ angular.module('MoneyNetworkW3')
                                                     else {
                                                         response.error = 'Get balance request failed with error = ' + error;
                                                         // close wallet and send error
-                                                        btcService.close_wallet(function (res) {
+                                                        etherService.close_wallet(function (res) {
                                                             send_response();
                                                         });
                                                     }
@@ -2953,7 +2912,7 @@ angular.module('MoneyNetworkW3')
                                                 response.balance_at = new Date().getTime();
                                                 // close wallet and return balance info
                                                 if (!request.close_wallet) send_response();
-                                                else btcService.close_wallet(function (res) {
+                                                else etherService.close_wallet(function (res) {
                                                     try { send_response() }
                                                     catch (e) { return send_exception(pgm, e) }
                                                 });
@@ -2966,7 +2925,7 @@ angular.module('MoneyNetworkW3')
                                 }
                                 else {
                                     // wallet already open. ignore open_wallet and close_wallet flags
-                                    btcService.get_balance(function (error) {
+                                    etherService.get_balance(function (error) {
                                         try {
                                             if (error) return send_response('Get balance request failed with error = ' + error);
                                             // get_balance request OK
@@ -3094,7 +3053,7 @@ angular.module('MoneyNetworkW3')
 
                                 // prepare_mt_request step 5: optional close wallet. only if wallet has been opened in step 2
                                 step_5_close_wallet = function () {
-                                    if (request.close_wallet) btcService.close_wallet(function (res) {
+                                    if (request.close_wallet) etherService.close_wallet(function (res) {
                                         step_6_done_ok()
                                     });
                                     else return step_6_done_ok();
@@ -3108,7 +3067,7 @@ angular.module('MoneyNetworkW3')
                                     if (!i) i = 0;
                                     console.log(pgm + 'i = ' + i);
                                     if (i >= request.money_transactions.length) return step_5_close_wallet();
-                                    btcService.get_new_address(function (error, address) {
+                                    etherService.get_new_address(function (error, address) {
                                         try {
                                             var money_transaction;
                                             if (error) {
@@ -3142,7 +3101,7 @@ angular.module('MoneyNetworkW3')
                                         // refresh balance. only for send money requests
                                         if (!send_money) return step_3_check_balance();
                                         // sending money. refresh balance.
-                                        btcService.get_balance(function (error) {
+                                        etherService.get_balance(function (error) {
                                             try {
                                                 if (error) console.log(pgm + 'warning. sending money and get_balance request failed with error = ' + error);
                                                 step_3_check_balance();
@@ -3152,10 +3111,9 @@ angular.module('MoneyNetworkW3')
                                     }
                                     else {
                                         // open test bitcoin wallet (also get_balance request)
-                                        btcService.init_wallet(status.wallet_id, status.wallet_password, function (error) {
+                                        etherService.openWallet(status, function (error) {
                                             try {
                                                 if (error && (wallet_info.status != 'Open')) {
-                                                    if (error == 'Origin is not allowed by Access-Control-Allow-Origin') error += '<br>Sometimes a VPN issue. Try disconnect from VPN' ;
                                                     z_wrapper_notification(['error', 'Open wallet request failed with<br>' + error]) ;
                                                     return send_response('Open wallet request failed with error = ' + error);
                                                 }
@@ -3596,7 +3554,7 @@ angular.module('MoneyNetworkW3')
                                         return step_5_get_new_address(i + 1) ;
                                     }
                                     // get new bitcoin address from btc
-                                    btcService.get_new_address(function (error, address) {
+                                    etherService.get_new_address(function (error, address) {
                                         try {
                                             if (error) return send_response('Could not get a new bitcoin address. error = ' + error);
                                             if (money_transaction.action == 'Send') jsons[i].address = address; // ingoing send money: other wallet must send test bitcoins to this address
@@ -3626,7 +3584,7 @@ angular.module('MoneyNetworkW3')
                                         // check balance. only incoming request money transactions
                                         if (!send_money) return step_4_check_balance();
                                         // sending money. refresh balance.
-                                        btcService.get_balance(function (error) {
+                                        etherService.get_balance(function (error) {
                                             try {
                                                 if (error) console.log(pgm + 'warning. money request and get_balance request failed with error = ' + error);
                                                 return step_4_check_balance();
@@ -3636,7 +3594,7 @@ angular.module('MoneyNetworkW3')
                                     }
                                     else {
                                         // open test bitcoin wallet (also get_balance request)
-                                        btcService.init_wallet(status.wallet_id, status.wallet_password, function (error) {
+                                        etherService.openWallet(status, function (error) {
                                             try {
                                                 if (error && (wallet_info.status != 'Open')) return send_response('Open wallet request failed with error = ' + error);
                                                 if (error && send_money) console.log(pgm + 'warning. money request and get_balance request failed with error = ' + error);
@@ -4790,17 +4748,16 @@ angular.module('MoneyNetworkW3')
                                                             }
                                                             if (!is_wallet_required) return cb(); // nothing to send
                                                             // wallet log in is required
-                                                            if (!status.wallet_id || !status.wallet_password) {
+                                                            if (etherService.is_login_info_missing(status)) {
                                                                 error = ['Money transaction failed', 'Cannot send money', 'No wallet log in was found'];
                                                                 console.log(pgm + 'todo: mark money transaction as aborted in ls');
                                                                 console.log(pgm + 'todo: update file with money transaction status');
                                                                 return report_error(pgm, error, {group_debug_seq: group_debug_seq});
                                                             }
                                                             // open wallet
-                                                            btcService.init_wallet(status.wallet_id, status.wallet_password, function (error) {
+                                                            etherService.openWallet(status, function (error) {
                                                                 try {
                                                                     if (error && (wallet_info.status != 'Open')) {
-                                                                        if (error.match(/Access-Control-Allow-Origin/)) return btc_cross_domain_error('Cannot open wallet', restart_receive_message, session_info, group_debug_seq) ; // halt processing
                                                                         error = ['Money transaction failed', 'Cannot send money', 'Open wallet request failed', error];
                                                                         console.log(pgm + 'todo: mark money transaction as aborted in ls');
                                                                         console.log(pgm + 'todo: update file with money transaction status');
@@ -4815,7 +4772,7 @@ angular.module('MoneyNetworkW3')
                                                                     console.log(pgm + 'todo: update file with money transaction status');
                                                                     return report_error(pgm, error, {group_debug_seq: group_debug_seq});
                                                                 }
-                                                            }); // init_wallet callback
+                                                            }); // openWallet callback
 
                                                         }; // optional_open_wallet
 
@@ -4823,7 +4780,7 @@ angular.module('MoneyNetworkW3')
                                                             if (wallet_was_open) return cb();
                                                             if (wallet_info.status != 'Open') return cb();
                                                             // close wallet
-                                                            btcService.close_wallet(function (res) {
+                                                            etherService.close_wallet(function (res) {
                                                                 console.log(pgm + 'res = ' + JSON.stringify(res));
                                                                 cb();
                                                             });
@@ -4869,14 +4826,13 @@ angular.module('MoneyNetworkW3')
                                                                 }
                                                                 money_transaction.btc_send_at = new Date().getTime();
                                                                 // wallet to wallet communication. send money operation has already been confirmed in UI. confirm = false
-                                                                btcService.send_money(money_transaction.json.address, amount_satoshi, false, function (err, result) {
+                                                                etherService.send_money(money_transaction.json.address, amount_satoshi, false, function (err, result) {
                                                                     var pgm = service + '.process_incoming_message.' + request.msgtype + '.send_money send_money callback/' + group_debug_seq + ': ';
                                                                     var amount_btc, amount_satoshi ;
                                                                     try {
                                                                         if (err) {
                                                                             if ((typeof err == 'object') && err.message) err = err.message;
                                                                             money_transaction.btc_send_error = err;
-                                                                            if (err.match(/Access-Control-Allow-Origin/)) return btc_cross_domain_error('Cannot send money', restart_receive_message, session_info, group_debug_seq) ; // halt processing
                                                                             // report_error(pgm, ["Money was not sent", err], {group_debug_seq: group_debug_seq, end_group_operation: false});
                                                                             report_error(pgm, ["Money was not sent", err]); // new group_debug_seq for notification
                                                                             console.log(pgm + 'todo: retry, abort or ?')
@@ -5159,7 +5115,7 @@ angular.module('MoneyNetworkW3')
                                                     }
                                                     if (!is_wallet_required) return cb() ; // nothing to send and no transaction ids to validate
                                                     // wallet log in is required
-                                                    if (!status.wallet_id || !status.wallet_password) {
+                                                    if (etherService.is_login_info_missing(status)) {
                                                         error = ['Money transaction failed', 'Cannot open wallet', 'No wallet log in was found'] ;
                                                         console.log(pgm + 'todo: save received transaction in ls (no_pay_ok>0 or no_pay_error>0)');
                                                         console.log(pgm + 'todo: update file with money transaction status');
@@ -5167,10 +5123,9 @@ angular.module('MoneyNetworkW3')
                                                         return report_error(pgm, error, {group_debug_seq: group_debug_seq}) ;
                                                     }
                                                     // open wallet
-                                                    btcService.init_wallet(status.wallet_id, status.wallet_password, function (error) {
+                                                    etherService.openWallet(status, function (error) {
                                                         try {
                                                             if (error && (wallet_info.status != 'Open')) {
-                                                                if (error.match(/Access-Control-Allow-Origin/)) return btc_cross_domain_error('Cannot open wallet', restart_receive_message, session_info, group_debug_seq) ; // halt processing
                                                                 error = ['Money transaction failed', 'Open wallet request failed', error] ;
                                                                 console.log(pgm + 'todo: save updated money transaction in ls');
                                                                 console.log(pgm + 'todo: update file with money transaction status');
@@ -5185,7 +5140,7 @@ angular.module('MoneyNetworkW3')
                                                             console.log(pgm + 'todo: update file with money transaction status');
                                                             return report_error(pgm, error, {group_debug_seq: group_debug_seq}) ;
                                                         }
-                                                    }); // init_wallet callback
+                                                    }); // openWallet callback
 
                                                 } ; // optional_open_wallet
 
@@ -5193,7 +5148,7 @@ angular.module('MoneyNetworkW3')
                                                     if (wallet_was_open) return cb() ;
                                                     if (wallet_info.status != 'Open') return cb() ;
                                                     // close wallet
-                                                    btcService.close_wallet(function (res) {
+                                                    etherService.close_wallet(function (res) {
                                                         console.log(pgm + 'res = ' + JSON.stringify(res)) ;
                                                         cb() ;
                                                     });
@@ -5215,14 +5170,13 @@ angular.module('MoneyNetworkW3')
                                                         amount_satoshi = '' + Math.round(amount_bitcoin * one_hundred_millions);
                                                         money_transaction.btc_send_at = new Date().getTime();
                                                         // wallet to wallet communication. send money operation has already been confirmed in UI. confirm = false
-                                                        btcService.send_money(money_transaction.json.address, amount_satoshi, false, function (err, result) {
+                                                        etherService.send_money(money_transaction.json.address, amount_satoshi, false, function (err, result) {
                                                             var pgm = service + '.process_incoming_message.' + request.msgtype + '.send_money send_money callback/' + group_debug_seq + ': ';
                                                             var amount_btc, amount_satoshi ;
                                                             try {
                                                                 if (err) {
                                                                     if ((typeof err == 'object') && err.message) err = err.message;
                                                                     money_transaction.btc_send_error = err;
-                                                                    if (err.match(/Access-Control-Allow-Origin/)) return btc_cross_domain_error('Cannot send money', restart_receive_message, session_info, group_debug_seq) ; // halt processing
                                                                     // report_error(pgm, err,  {group_debug_seq: group_debug_seq, end_group_operation: false}) ;
                                                                     report_error(pgm, err) ; // new group_debug_seq for notification
                                                                     console.log(pgm + 'todo: retry, abort or ?')
@@ -5256,11 +5210,10 @@ angular.module('MoneyNetworkW3')
                                                         money_transaction = session_info.money_transactions[i];
                                                         if (money_transaction.action != 'Send') throw pgm + 'invalid call. Is receiver and action is not Send' ;
                                                         if (!money_transaction.btc_receive_ok) throw pgm + 'invalid call. No txhash received from sender' ;
-                                                        btcService.get_transaction(money_transaction.btc_receive_ok, function (err, tx) {
+                                                        etherService.get_transaction(money_transaction.btc_receive_ok, function (err, tx) {
                                                             var amount_bitcoin, expected_amount, received_amount, j, output, amount_btc, amount_satoshi ;
                                                             console.log(pgm + 'err = ' + JSON.stringify(err)) ;
                                                             console.log(pgm + 'tx = ' + JSON.stringify(tx)) ;
-                                                            if (err && err.crossDomain) return btc_cross_domain_error('Cannot verify bitcoin transactionid', restart_receive_message, session_info, group_debug_seq) ; // halt processing
                                                             if (err && err.code == 404) {
                                                                 //err = {"code":404}
                                                                 //tx = {"code":404,"msg":"Transaction not found"}
@@ -5545,17 +5498,16 @@ angular.module('MoneyNetworkW3')
                                                     if (wallet_was_open) return cb() ;
                                                     if (!no_pay_ok) return cb() ;
                                                     // wallet log in is required
-                                                    if (!status.wallet_id || !status.wallet_password) {
+                                                    if (!etherService.is_login_info_missing(status)) {
                                                         error = ['Money transaction failed', 'Cannot open wallet', 'No wallet log in was found'] ;
                                                         console.log(pgm + 'todo: save received transaction in ls (no_pay_ok>0 or no_pay_error>0)');
                                                         console.log(pgm + 'todo: update file with money transaction status');
                                                         return report_error(pgm, error, {group_debug_seq: group_debug_seq}) ;
                                                     }
                                                     // open wallet
-                                                    btcService.init_wallet(status.wallet_id, status.wallet_password, function (error) {
+                                                    etherService.openWallet(status, function (error) {
                                                         try {
                                                             if (error && (wallet_info.status != 'Open')) {
-                                                                if (error.match(/Access-Control-Allow-Origin/)) return btc_cross_domain_error('Cannot open wallet', restart_receive_message, session_info, group_debug_seq) ; // halt processing
                                                                 error = ['Money transaction failed', 'Open wallet request failed', error] ;
                                                                 console.log(pgm + 'todo: save updated money transaction in ls');
                                                                 console.log(pgm + 'todo: update file with money transaction status');
@@ -5570,7 +5522,7 @@ angular.module('MoneyNetworkW3')
                                                             console.log(pgm + 'todo: update file with money transaction status');
                                                             return report_error(pgm, error, {group_debug_seq: group_debug_seq}) ;
                                                         }
-                                                    }); // init_wallet callback
+                                                    }); // openWallet callback
 
                                                 } ; // optional_open_wallet
 
@@ -5578,7 +5530,7 @@ angular.module('MoneyNetworkW3')
                                                     if (wallet_was_open) return cb() ;
                                                     if (wallet_info.status != 'Open') return cb() ;
                                                     // close wallet
-                                                    btcService.close_wallet(function (res) {
+                                                    etherService.close_wallet(function (res) {
                                                         console.log(pgm + 'res = ' + JSON.stringify(res)) ;
                                                         cb() ;
                                                     });
@@ -5610,11 +5562,10 @@ angular.module('MoneyNetworkW3')
                                                         if (!money_transaction.btc_receive_ok) return check_money(i+1) ; // failed request money operation
 
                                                         // check bitcoin transactionid
-                                                        btcService.get_transaction(money_transaction.btc_receive_ok, function (err, tx) {
+                                                        etherService.get_transaction(money_transaction.btc_receive_ok, function (err, tx) {
                                                             var amount_bitcoin, expected_amount, received_amount, j, output, amount_btc, amount_satoshi ;
                                                             console.log(pgm + 'err = ' + JSON.stringify(err)) ;
                                                             console.log(pgm + 'tx = ' + JSON.stringify(tx)) ;
-                                                            if (err && err.crossDomain) return btc_cross_domain_error('Cannot verify bitcoin transactionid', restart_receive_message, session_info, group_debug_seq) ; // halt processing
                                                             if (err && err.code == 404) {
                                                                 //err = {"code":404}
                                                                 //tx = {"code":404,"msg":"Transaction not found"}
@@ -6892,7 +6843,7 @@ angular.module('MoneyNetworkW3')
                 // send balance to MN
                 request = {
                     msgtype: 'balance',
-                    balance: [ {code: 'tBTC', amount: parseFloat(wallet_info.confirmed_balance)} ],
+                    balance: [ {code: 'tETH', amount: wallet_info.confirmed_balance} ],
                     balance_at: new Date().getTime()
                 } ;
                 console.log(pgm + 'status.sessionid =' + status.sessionid + ', encrypt2.sessionid = ' + encrypt2.sessionid) ;

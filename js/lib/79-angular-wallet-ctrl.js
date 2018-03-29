@@ -1,6 +1,6 @@
 angular.module('MoneyNetworkW3')
 
-    .controller('WalletCtrl', ['$rootScope', '$timeout', 'MoneyNetworkW3Service', 'btcService', function ($rootScope, $timeout, W3Service, btcService) {
+    .controller('WalletCtrl', ['$rootScope', '$timeout', 'MoneyNetworkW3Service', 'etherService', function ($rootScope, $timeout, W3Service, etherService) {
         var self = this;
         var controller = 'WalletCtrl';
         console.log(controller + ' loaded');
@@ -17,7 +17,6 @@ angular.module('MoneyNetworkW3')
         function z_wrapper_notification (array) {
             W3Service.z_wrapper_notification(array) ;
         } // z_wrapper_notification
-
 
         // 2-6: startup sequence
         // 2: check merger permission
@@ -199,54 +198,49 @@ angular.module('MoneyNetworkW3')
 
         }; // self.add_site
 
-        // generate random wallet ID and password
-        self.gen_wallet_id = function() {
+        // generate random wallet username and password (BrainWallet)
+        self.gen_wallet_usr = function() {
             if (self.status.restoring) return ; // restoring backup
-            if (self.status.wallet_id) {
-                z_wrapper_notification(["info", 'Old Wallet Id was not replaced', 5000]);
+            if (self.status.wallet_username) {
+                z_wrapper_notification(["info", 'Old wallet username was not replaced', 5000]);
                 return ;
             }
-            self.status.wallet_id = W3Service.generate_random_string(30, false) ;
+            self.status.wallet_username = W3Service.generate_random_string(30, false) ;
         };
         self.gen_wallet_pwd = function() {
             if (self.status.restoring) return ; // restoring backup
             if (self.status.wallet_password) {
-                z_wrapper_notification(["info", 'Old Wallet Password was not replaced', 5000]);
+                z_wrapper_notification(["info", 'Old wallet password was not replaced', 5000]);
                 return ;
             }
             self.status.wallet_password = W3Service.generate_random_string(30, true) ;
         };
 
-
         // wallet status and balance
-        self.wallet_info = btcService.get_wallet_info() ;
+        self.wallet_info = etherService.get_wallet_info() ;
 
         // wallet operations
-        self.create_new_wallet = function () {
+        self.create_random_wallet = function () {
             if (self.status.restoring) return ; // restoring backup
-            btcService.create_new_wallet(self.status.wallet_id, self.status.wallet_password, function (error) {
+            etherService.createRandom(self.status, function (error) {
                 if (error) {
-                    if (error == 'Origin is not allowed by Access-Control-Allow-Origin') error += '<br>Sometimes a VPN issue. Try disconnect from VPN' ;
                     z_wrapper_notification(["error", error]);
                 }
                 else {
-                    z_wrapper_notification(["done", 'New Bitcoin wallet was created OK.<br>Please save backup info<br>See console log', 5000]);
-                    $rootScope.$apply() ;
+                    z_wrapper_notification(["done", 'New Ether test wallet was created OK.<br>Please save private key', 5000]);
                 }
             }) ;
-        }; // create_new_wallet
+        }; // createRandom
 
-        self.init_wallet = function () {
-            var pgm = controller + '.init_wallet: ' ;
+        self.open_wallet = function () {
+            var pgm = controller + '.open_wallet: ' ;
             if (self.status.restoring) return ; // restoring backup
-            btcService.init_wallet(self.status.wallet_id, self.status.wallet_password, function (error) {
+            etherService.openWallet(self.status, function (error) {
                 if (error) {
-                    if (error == 'Origin is not allowed by Access-Control-Allow-Origin') error += '<br>Sometimes a VPN issue. Try disconnect from VPN' ;
                     z_wrapper_notification(["error", error]);
                 }
                 else {
-                    z_wrapper_notification(["info", 'Bitcoin wallet was initialized OK.', 5000]);
-                    $rootScope.$apply() ;
+                    z_wrapper_notification(["info", 'Ether wallet was initialized OK.', 5000]);
                     if (!self.status.sessionid) return ; // no MN session
                     // send balance to MN
                     W3Service.send_balance(function (res) {
@@ -254,15 +248,14 @@ angular.module('MoneyNetworkW3')
                     }) ;
                 }
             }) ;
-        }; // init_wallet
+        }; // open_wallet
 
         self.get_balance = function () {
             var pgm = controller + '.get_balance: ' ;
             if (self.status.restoring) return ; // restoring backup
-            if (self.wallet_info.status != 'Open') return z_wrapper_notification(["info", "No bitcoin wallet found", 3000]) ;
-            btcService.get_balance(function(error) {
+            if (self.wallet_info.status != 'Open') return z_wrapper_notification(["info", "No ether wallet found", 3000]) ;
+            etherService.get_balance(function(error) {
                 if (error) {
-                    if (error == 'Origin is not allowed by Access-Control-Allow-Origin') error += '<br>Sometimes a VPN issue. Try disconnect from VPN' ;
                     return z_wrapper_notification(["error", error]);
                 }
                 $rootScope.$apply() ;
@@ -276,24 +269,22 @@ angular.module('MoneyNetworkW3')
 
         self.close_wallet = function () {
             if (self.status.restoring) return ; // restoring backup
-            btcService.close_wallet(function (error) {
+            etherService.close_wallet(function (error) {
                 if (error) {
-                    if (error == 'Origin is not allowed by Access-Control-Allow-Origin') error += '<br>Sometimes a VPN issue. Try disconnect from VPN' ;
                     z_wrapper_notification(["error", error]);
                 }
-                else z_wrapper_notification(["info", 'Bitcoin wallet closed', 5000]);
+                else z_wrapper_notification(["info", 'Ether wallet closed', 5000]);
             })
         } ; // close_wallet
 
         self.delete_wallet = function () {
             if (self.status.restoring) return ; // restoring backup
-            btcService.delete_wallet(function (error) {
+            etherService.delete_wallet(function (error) {
                 if (error) {
-                    if (error == 'Origin is not allowed by Access-Control-Allow-Origin') error += '<br>Sometimes a VPN issue. Try disconnect from VPN' ;
                     z_wrapper_notification(["error", error]);
                 }
                 else {
-                    z_wrapper_notification(["done", 'Bitcoin wallet was deleted', 5000]);
+                    z_wrapper_notification(["done", 'Ether wallet was deleted', 5000]);
                     // clear form
                     self.status.wallet_id = null ;
                     self.status.wallet_password = null ;
@@ -307,10 +298,9 @@ angular.module('MoneyNetworkW3')
 
         self.get_new_address = function () {
             if (self.status.restoring) return ; // restoring backup
-            if (self.wallet_info.status != 'Open') z_wrapper_notification(["info", "No bitcoin wallet found", 3000]) ;
-            else self.receiver_address = btcService.get_new_address(function (err, address) {
+            if (self.wallet_info.status != 'Open') z_wrapper_notification(["info", "No ether wallet found", 3000]) ;
+            else self.receiver_address = etherService.get_new_address(function (err, address) {
                 if (err) {
-                    if (err == 'Origin is not allowed by Access-Control-Allow-Origin') err += '<br>Sometimes a VPN issue. Try disconnect from VPN' ;
                     return z_wrapper_notification(['error', 'Could not get a new address. error = ' + err]) ;
                 }
                 else {
@@ -323,15 +313,14 @@ angular.module('MoneyNetworkW3')
         self.send_money = function () {
             var pgm = controller + '.send_money: ' ;
             if (self.status.restoring) return ; // restoring backup
-            if (self.wallet_info.status != 'Open') z_wrapper_notification(["info", "No bitcoin wallet found", 3000]) ;
+            if (self.wallet_info.status != 'Open') z_wrapper_notification(["info", "No ether wallet found", 3000]) ;
             if (!self.send_address || !self.send_amount) z_wrapper_notification(["error", "Receiver and/or amount is missing", 5000]) ;
             if (!self.send_amount.match(/^[0-9]+$/)) return z_wrapper_notification(["error", "Amount must be an integer (Satoshi)", 5000]) ;
             // manuel send money action in w3. confirm = true. ask user to confirm money transaction
-            btcService.send_money(self.send_address, self.send_amount, true, function (err, result) {
+            etherService.send_money(self.send_address, self.send_amount, true, function (err, result) {
                 if (err) {
                     if ((typeof err == 'object') && err.message) err = err.message ;
                     console.log(pgm + 'err = ' + JSON.stringify(err)) ;
-                    if (err == 'Origin is not allowed by Access-Control-Allow-Origin') err += '<br>Sometimes a VPN issue. Try disconnect from VPN' ;
                     z_wrapper_notification(["error", err]) ;
                 }
                 else z_wrapper_notification(["done", "Money was send<br>result = " + JSON.stringify(result)]);

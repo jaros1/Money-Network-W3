@@ -1390,7 +1390,7 @@ var MoneyNetworkAPILib = (function () {
                             "type": 'object',
                             "properties": {
                                 "code": {"type": 'string', "minLength": 2, "maxLength": 5},
-                                "amount": {"type": 'number'}
+                                "amount": { "type": ['number', 'string'], "description": 'number or string with a formatted number (number.toFixed)' }
                             },
                             "required": ['code', 'amount'],
                             "additionalProperties": false

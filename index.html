@@ -107,25 +107,58 @@
                 <tr>
                     <td>Network</td>
                     <td>:</td>
-                    <td>Ethereum</td>
+                    <td>Ropsten (the test network)</td>
                 </tr>
+
                 <tr>
-                    <td>Wallet Id</td>
+                    <td>Log in method</td>
                     <td>:</td>
-                    <td><input type="text" ng-model="w.status.wallet_id" style="width: 300px"> Generate <input type="button" value="Wallet Id" ng-click="w.gen_wallet_id()"/></td>
+                    <td>
+                        <input type="radio" ng-model="w.status.login_method" value="1" ng-change="w.login_method_changed()" ng-disabled="w.status.login_method_disabled"> Private key&nbsp;&nbsp;
+                        <input type="radio" ng-model="w.status.login_method" value="2" ng-change="w.login_method_changed()" ng-disabled="w.status.login_method_disabled"> Random wallet&nbsp;&nbsp;
+                        <input type="radio" ng-model="w.status.login_method" value="3" ng-change="w.login_method_changed()" ng-disabled="w.status.login_method_disabled"> Encrypted JSON Wallet&nbsp;&nbsp;
+                        <input type="radio" ng-model="w.status.login_method" value="4" ng-change="w.login_method_changed()" ng-disabled="w.status.login_method_disabled"> Mnemonic Wallet&nbsp;&nbsp;
+                        <input type="radio" ng-model="w.status.login_method" value="5" ng-change="w.login_method_changed()" ng-disabled="w.status.login_method_disabled"> Brain Wallet&nbsp;&nbsp;
+                    </td>
                 </tr>
-                <tr>
+                <tr ng-show="w.status.login_method == '1'">
+                    <td>Wallet private key</td>
+                    <td>:</td>
+                    <td><input type="text" ng-model="w.status.wallet_private_key" placeholder="Enter private key" style="width: 300px"></td>
+                </tr>
+                <tr ng-show="w.status.login_method == '3'">
+                    <td>Encrypted JSON</td>
+                    <td>:</td>
+                    <td><input type="text" ng-model="w.status.wallet_encrypted_json" placeholder="Enter encrypted JSON" style="width: 300px"></td>
+                </tr>
+                <tr ng-show="w.status.login_method == '3'">
                     <td>Wallet password</td>
                     <td>:</td>
-                    <td><input type="text" ng-model="w.status.wallet_password" style="width: 300px"> Generate <input type="button" value="Wallet password" ng-click="w.gen_wallet_pwd()"/></td>
+                    <td><input type="text" ng-model="w.status.wallet_password" placeholder="Enter password" style="width: 300px"></td>
                 </tr>
+                <tr ng-show="w.status.login_method == '4'">
+                    <td>Wallet mnemonic</td>
+                    <td>:</td>
+                    <td><input type="text" ng-model="w.status.wallet_mnemonic" placeholder="Enter mnemonic" style="width: 300px"></td>
+                </tr>
+                <tr ng-show="w.status.login_method == '5'">
+                    <td>Wallet username</td>
+                    <td>:</td>
+                    <td><input type="text" ng-model="w.status.wallet_username" placeholder="Enter username" style="width: 300px"> Generate <input type="button" value="username" ng-click="w.gen_wallet_usr()"/></td>
+                </tr>
+                <tr ng-show="w.status.login_method == '5'">
+                    <td>Wallet password</td>
+                    <td>:</td>
+                    <td><input type="text" ng-model="w.status.wallet_password" placeholder="Enter password" style="width: 300px"> Generate <input type="button" value="password" ng-click="w.gen_wallet_pwd()"/></td>
+                </tr>
+
                 <tr><td colspan="3">&nbsp;</td> </tr>
                 <tr>
                     <td>Wallet operations:</td>
                     <td>:</td>
                     <td>
-                        <input type="button" value="Create wallet" ng-click="w.create_new_wallet()"/>
-                        <input type="button" value="Log in" ng-click="w.init_wallet()"/>
+                        <input type="button" value="Create wallet" ng-click="w.create_random_wallet()" ng-disabled="w.status.login_method != '2'"/>
+                        <input type="button" value="Log in" ng-click="w.open_wallet()" ng-disabled="!w.status.login_method || (w.status.login_method == '2')"/>
                         <input type="button" value="Get balance" ng-click="w.get_balance()"/>
                         <input type="button" value="Log out" ng-click="w.close_wallet()"/>
                         <input type="button" value="Delete wallet" ng-click="w.delete_wallet()"/>
@@ -247,9 +280,9 @@
 
 <script type="text/javascript" src="js-api/MoneyNetworkAPI.js"></script>
 
-<!--script type="text/javascript" src="js/all.js"></script>
+<script type="text/javascript" src="js/all.js"></script>
 <!-- -->
-<script type="text/javascript" src="js/all.js.zip/all.js"></script>
+<!--script type="text/javascript" src="js/all.js.zip/all.js"></script>
 <!-- -->
 
 </body>
