@@ -122,7 +122,7 @@ angular.module('MoneyNetworkW3')
                 return ;
             }
             if (self.status.restoring) return ; // restoring backup
-            W3Service.save_wallet_login(self.status.save_login, self.status.wallet_id, self.status.wallet_password, function(res) {
+            W3Service.save_wallet_login(self.status.save_login, function(res) {
                 console.log(pgm + 'res = ' + JSON.stringify(res)) ;
 
             }) ;

@@ -126,6 +126,7 @@ angular.module('MoneyNetworkW3')
                         ether_wallet.getBalance(blockNumber-12).then(function(confirmed_balance) {
                             wallet_info.confirmed_balance = confirmed_balance.toString(18) ;
                             console.log(pgm + 'confirmed balance = ', wallet_info.confirmed_balance);
+                            $rootScope.$apply() ;
                             cb(null) ;
                         }) ; // getBalance callback 3 (confirmed)
                     }); // getBlockNumber callback 2
@@ -469,39 +470,55 @@ angular.module('MoneyNetworkW3')
 
             var encrypt1 = new MoneyNetworkAPI({debug: 'encrypt1'}) ; // encrypt1. no sessionid. self encrypt/decrypt data in W3 localStorage ;
 
+            // get_wallet_login helper. check login object. return error message or copy login information to status object
+            function read_and_save_login (login) {
+                if (!login) return 'Login info not found' ;
+                if (typeof login != 'object') return 'Login info is not an object. login = ' + JSON.stringify(login) ;
+                if (!login.hasOwnProperty('login_method')) return 'Login_method was not found in login object. login = ' + JSON.stringify(login) ;
+                if (['1','3','4','5'].indexOf(login.login_method) == -1) return 'Unknown login_method ' + JSON.stringify(login.login_method) ;
+                status.login_method = login.login_method ;
+                if (status.login_method == '1') status.wallet_private_key = login.wallet_private_key ;
+                if (status.login_method == '3') {
+                    status.wallet_encrypted_json = login.wallet_encrypted_json ;
+                    status.wallet_password = login.wallet_password ;
+                }
+                if (status.login_method == '4') status.wallet_mnemonic = login.wallet_mnemonic ;
+                if (status.login_method == '5') {
+                    status.wallet_username = login.wallet_username ;
+                    status.wallet_password = login.wallet_password ;
+                }
+            }
+
             // save_wallet_login:
             // - '1': wallet login is saved encrypted (cryptMessage) in W3 localStorage
-            // - '2' & '3': wallet login is saved encrypted (symmetric) in MN localStorage (session is required)
+            // - '2': wallet login is saved encrypted (symmetric) in MN localStorage (session is required)
             function get_wallet_login(save_wallet_login, cb) {
                 var pgm = service + '.get_wallet_login: ' ;
                 var error, auth_address, user_login_info, login, encrypted_json, request ;
                 if (['1','2'].indexOf(save_wallet_login) == -1) return cb(null, null, "Invalid call. save_wallet_login must be equal '1' or '2'") ;
                 if (save_wallet_login == '1') {
                     // wallet login is saved encrypted (cryptMessage) in W3 localStorage
-                    if (!ls.save_login) return cb(null, null, 'save_login hash was not found in localStorage') ;
+                    if (!ls.save_login) return cb('save_login hash was not found in localStorage') ;
                     if (typeof ls.save_login != 'object') {
                         error = 'save_login was not a hash. save_login = ' + JSON.stringify(ls.save_login) ;
                         ls.save_login = {} ;
                         ls_save() ;
-                        return cb(null, null, error) ;
+                        return cb(error) ;
                     }
                     auth_address = ZeroFrame.site_info.cert_user_id ? ZeroFrame.site_info.auth_address : 'n/a' ;
                     user_login_info = ls.save_login[auth_address] ;
-                    if (!user_login_info) return cb(null, null, 'Wallet login for ' + auth_address + ' was not found') ;
+                    if (!user_login_info) return cb('Wallet login for ' + auth_address + ' was not found') ;
                     if (auth_address == 'n/a') {
-                        // no ZeroNet certificate. login is saved unencrypted in ls. not recommended
+                        // no ZeroNet certificate. wallet login is saved unencrypted in ls. not recommended
                         login = user_login_info.login ;
                         console.log(pgm + 'unencrypted login = ' + JSON.stringify(login)) ;
-                        if (!login) return cb(null, null, 'Wallet login for ' + auth_address + ' was not found') ;
-                        if (typeof login != 'object') {
-                            error = 'save_login[' + auth_address + '].login is not a hash. save_login = ' + JSON.stringify(login) ;
+                        error = read_and_save_login(login) ;
+                        if (error) {
                             user_login_info.login = {} ;
                             ls_save() ;
-                            return cb(null, null, error) ;
+                            return cb(error) ;
                         }
-                        status.wallet_id = login.wallet_id ;
-                        status.wallet_password = login.wallet_password ;
-                        return cb(status.wallet_id, status.wallet_password, null) ;
+                        return cb(null) ;
                         setTimeout(load_w_sessions, 0) ;
                     }
                     // ZeroNet certificate present. decrypt login
@@ -510,17 +527,15 @@ angular.module('MoneyNetworkW3')
                     encrypt1.decrypt_json(encrypted_json, {}, function(json) {
                         var pgm = service + '.get_wallet_login decrypt_json callback: ' ;
                         console.log(pgm + 'json = ' + JSON.stringify(json)) ;
-                        if (!json) cb(null, null, 'decrypt error. encrypted_json was ' + JSON.stringify(user_login_info)) ;
-                        else {
-                            status.wallet_id = json.wallet_id ;
-                            status.wallet_password = json.wallet_password ;
-                            cb(status.wallet_id, status.wallet_password, null) ;
-                            setTimeout(load_w_sessions, 0) ;
-                        }
+                        if (!json) return cb('decrypt error. encrypted_json was ' + JSON.stringify(user_login_info)) ;
+                        error = read_and_save_login(json) ;
+                        if (error) return cb(error) ;
+                        cb(null) ;
+                        setTimeout(load_w_sessions, 0) ;
                     }) ; // decrypt_json callback
                 }
                 else {
-                    // save_wallet_login == '2' or '3'
+                    // save_wallet_login == '2'
                     // wallet login is saved encrypted (symmetric) in MN localStorage (session is required)
                     if (!status.sessionid) return cb(null, null, 'Cannot read wallet information. MN session was not found');
                     // send get_data message to MN and wait for response
@@ -566,10 +581,8 @@ angular.module('MoneyNetworkW3')
                             }
                             // OK. received wallet login from MN
                             console.log(pgm + 'data[0] = ' + JSON.stringify(data[0])) ;
-                            // data[0] = {"key":"login","value":{"wallet_id":"UZGToFfXOz7GKCogsOOuxJYndjcmt2","wallet_password":"bGaGK/+w(Qm4Wi}fAyz:CcgxWuen)F"}}
-                            status.wallet_id = data[0].value.wallet_id ;
-                            status.wallet_password = data[0].value.wallet_password ;
-                            cb(status.wallet_id, status.wallet_password, null);
+                            error = read_and_save_login(data[0].value) ;
+                            cb(error) ;
                             setTimeout(load_w_sessions, 0) ;
                         }) ; // decrypt_row callback
 
@@ -582,13 +595,12 @@ angular.module('MoneyNetworkW3')
             // - '0': no thank you. Clear any wallet data previously saved with '1' or '2'
             // - '1': wallet login is saved encrypted (cryptMessage) in W3 localStorage
             // - '2': wallet login is saved encrypted (symmetric) in MN localStorage (session is required)
-            function save_wallet_login(save_wallet_login, wallet_id, wallet_password, cb) {
+            function save_wallet_login(save_wallet_login, cb) {
                 var pgm = service + '.save_wallet_login: ';
                 var cert_user_id, auth_address, data, request, old_login, save_w3;
-                console.log(pgm + 'save_wallet_login = ' + save_wallet_login + ', wallet_id = ' + wallet_id + ', wallet_password = ' + wallet_password);
-                if (['0', '1', '2', '3'].indexOf(save_wallet_login) == -1) return cb({error: "Invalid call. save_wallet_login must be equal '0', '1', '2' or '3'"});
+                if (['0', '1', '2'].indexOf(save_wallet_login) == -1) return cb({error: "Invalid call. save_wallet_login must be equal '0', '1' or '2'"});
 
-                // save wallet login choice in W3 localStorage (choice = 0, 1, 2 or 3
+                // save wallet login choice in W3 localStorage (choice = 0, 1 or 2)
                 cert_user_id = ZeroFrame.site_info.cert_user_id ;
                 auth_address = cert_user_id ? ZeroFrame.site_info.auth_address : 'n/a' ;
                 if (!ls.save_login) ls.save_login = {};
@@ -603,9 +615,9 @@ angular.module('MoneyNetworkW3')
                 console.log(pgm + 'ls = ' + JSON.stringify(ls)) ;
                 ls_save();
 
-                // for get_balance request
-                status.wallet_id = wallet_id ;
-                status.wallet_password = wallet_password ;
+                //// for get_balance request
+                //status.wallet_id = wallet_id ;
+                //status.wallet_password = wallet_password ;
                 setTimeout(load_w_sessions, 0) ;
 
                 // get and add W3 pubkey2 to encryption setup (self encrypt using ZeroNet certificate)
@@ -618,24 +630,35 @@ angular.module('MoneyNetworkW3')
                     save_w3 = function (cb) {
                         var pgm = service + '.save_wallet_login.save_w3: ';
                         var unencrypted_login;
+                        // create unencrypted object with login info
+                        if (save_wallet_login != '0') {
+                            unencrypted_login = { login_method: status.login_method } ;
+                            if (status.login_method == '1') unencrypted_login.wallet_private_key = status.wallet_private_key ;
+                            if (status.login_method == '3') {
+                                unencrypted_login.wallet_encrypted_json = status.wallet_encrypted_json ;
+                                unencrypted_login.wallet_password = status.wallet_password ;
+                            }
+                            if (status.login_method == '4') unencrypted_login.wallet_mnemonic = status.wallet_mnemonic ;
+                            if (status.login_method == '5') {
+                                unencrypted_login.wallet_username = status.wallet_username ;
+                                unencrypted_login.wallet_password = status.wallet_password ;
+                            }
+                            console.log(pgm + 'unencrypted_login = ' + JSON.stringify(unencrypted_login));
+                        }
                         if (save_wallet_login != '1') {
                             // delete any old login info from W3 localStorage
                             delete ls.save_login[auth_address].login;
                             ls_save();
-                            return cb();
+                            return cb(unencrypted_login);
                         }
                         // save login info in W3 localStorage
                         if (auth_address == 'n/a') {
                             // no cert_user_id. not encrypted
-                            ls.save_login[auth_address].login = {
-                                wallet_id: wallet_id,
-                                wallet_password: wallet_password
-                            };
+                            ls.save_login[auth_address].login = unencrypted_login ;
                             ls_save();
                             return cb();
                         }
                         // cert_user_id: encrypt login
-                        unencrypted_login = {wallet_id: wallet_id, wallet_password: wallet_password};
                         console.log(pgm + 'encrypt1.other_pubkey2 = ' + encrypt1.other_session_pubkey2);
                         encrypt1.encrypt_json(unencrypted_login, {encryptions: [2]}, function (encrypted_login) {
                             ls.save_login[auth_address].login = encrypted_login;
@@ -644,16 +667,16 @@ angular.module('MoneyNetworkW3')
                         });
                     }; // save_w3
 
-                    save_w3(function () {
+                    save_w3(function (unencrypted_login) {
                         var pgm = service + '.save_wallet_login save_w3 callback 2: ';
                         // update MN localStorage (choice '2' and '3')
-                        if (['2', '3'].indexOf(save_wallet_login) != -1) {
+                        if (save_wallet_login == '2') {
                             if (!status.sessionid) {
                                 ls.save_login[auth_address] = old_login;
                                 return cb({error: 'Error. Cannot save wallet information in MN. MN session was not found'});
                             }
                             // encrypt wallet data before sending data to MN
-                            data = {wallet_id: wallet_id, wallet_password: wallet_password};
+                            data = unencrypted_login;
                             console.log(pgm + 'data = ' + JSON.stringify(data));
                             // cryptMessage encrypt data with current ZeroId before sending data to MN.
                             // encrypt data before send save_data message
