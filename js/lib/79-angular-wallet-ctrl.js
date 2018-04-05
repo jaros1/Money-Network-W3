@@ -286,8 +286,12 @@ angular.module('MoneyNetworkW3')
                 else {
                     z_wrapper_notification(["done", 'Ether wallet was deleted', 5000]);
                     // clear form
-                    self.status.wallet_id = null ;
-                    self.status.wallet_password = null ;
+                    delete self.status.login_method ;
+                    delete self.status.wallet_private_key ;
+                    delete self.status.wallet_encrypted_json ;
+                    delete self.status.wallet_mnemonic ;
+                    delete self.status.wallet_username ;
+                    delete self.status.wallet_password ;
                     self.send_address = null ;
                     self.send_amount = null ;
                     self.receiver_address = null ;
@@ -296,26 +300,26 @@ angular.module('MoneyNetworkW3')
             })
         }; // delete_wallet
 
-        self.get_new_address = function () {
+        // only one address = wallet address in this ether wallet implementation
+        self.get_address = function () {
             if (self.status.restoring) return ; // restoring backup
             if (self.wallet_info.status != 'Open') z_wrapper_notification(["info", "No ether wallet found", 3000]) ;
-            else self.receiver_address = etherService.get_new_address(function (err, address) {
-                if (err) {
-                    return z_wrapper_notification(['error', 'Could not get a new address. error = ' + err]) ;
+            else etherService.get_address(function (error, address) {
+                if (error) {
+                    return z_wrapper_notification(['error', 'Could not find wallet address = ' + error]) ;
                 }
                 else {
                     self.receiver_address = address ;
-                    $rootScope.$apply() ;
                 }
             }) ;
-        }; // get_new_address
+        }; // get_address
 
         self.send_money = function () {
             var pgm = controller + '.send_money: ' ;
             if (self.status.restoring) return ; // restoring backup
             if (self.wallet_info.status != 'Open') z_wrapper_notification(["info", "No ether wallet found", 3000]) ;
             if (!self.send_address || !self.send_amount) z_wrapper_notification(["error", "Receiver and/or amount is missing", 5000]) ;
-            if (!self.send_amount.match(/^[0-9]+$/)) return z_wrapper_notification(["error", "Amount must be an integer (Satoshi)", 5000]) ;
+            if (!self.send_amount.match(/^[1-9][0-9]*$/)) return z_wrapper_notification(["error", "Amount must be a positive integer (Wei)", 5000]) ;
             // manuel send money action in w3. confirm = true. ask user to confirm money transaction
             etherService.send_money(self.send_address, self.send_amount, true, function (err, result) {
                 if (err) {

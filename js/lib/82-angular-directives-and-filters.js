@@ -95,6 +95,31 @@ angular.module('MoneyNetworkW3')
         // end br
     }])
 
+    .filter('formatBalance', [ 'etherService', function (etherService) {
+        // format confirmed and unconfirmed ether balance
+        var wei_factor ;
+        wei_factor = etherService.get_wei_factor() ;
+        return function (wei_s) {
+            var wei_bn, ether_bn, ether_s ;
+            if (!wei_s) return ;
+            if (typeof wei_s != 'string') {
+                console.log('formatBalance: wei_s = ', wei_s) ;
+                return 'Error. Not a string with digits' ;
+            }
+            if (!wei_s.match(/^[0-9]+$/)) {
+                console.log('formatBalance: wei_s = ', wei_s) ;
+                return 'Error. Not a string with digits' ;
+            }
+            wei_bn = new BigNumber(wei_s) ;
+            ether_bn = wei_bn.dividedBy(wei_factor) ;
+            wei_s = etherService.bn_toFixed(wei_bn, 0, true) ;
+            ether_s = etherService.bn_toFixed(ether_bn, 18) ;
+            return wei_s + ' test wei = ' + ether_s + ' tETH' ;
+        } ;
+        // end formatBalance
+    }])
+
+
 
 ;
 
