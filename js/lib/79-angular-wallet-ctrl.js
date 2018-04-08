@@ -322,11 +322,25 @@ angular.module('MoneyNetworkW3')
             if (!self.send_amount.match(/^[1-9][0-9]*$/)) return z_wrapper_notification(["error", "Amount must be a positive integer (Wei)", 5000]) ;
             // manuel send money action in w3. confirm = true. ask user to confirm money transaction
             etherService.send_money(self.send_address, self.send_amount, true, function (err, result) {
+                //result = {
+                //    "nonce": 0,
+                //    "gasPrice": {"_bn": "491994795"},
+                //    "gasLimit": {"_bn": "16e360"},
+                //    "to": "0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
+                //    "value": {"_bn": "f4240"},
+                //    "data": "0x",
+                //    "v": 41,
+                //    "r": "0xae78fc9f564a80034a29d2b9653d12fe156567d41df1584f463e03145e802ffc",
+                //    "s":"0x24edc9ec2eb7a36ace17c4bd5de6e50485f5ecd87a0be5161b5c6a6a349f7564",
+                //    "chainId":3,
+                //    "from":"0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
+                //    "hash":"0x21cd418b210db467dbd913cbc617aa2e45446b33bf495c43f74ad3db7de2794d"};
                 if (err) {
                     if ((typeof err == 'object') && err.message) err = err.message ;
                     console.log(pgm + 'err = ' + JSON.stringify(err)) ;
                     z_wrapper_notification(["error", err]) ;
                 }
+                else if (result && (typeof result.hash == 'string')) z_wrapper_notification(["done", "Money was send<br>result = " + result.hash]);
                 else z_wrapper_notification(["done", "Money was send<br>result = " + JSON.stringify(result)]);
             }) ;
         }; // send_money
