@@ -214,11 +214,21 @@ angular.module('MoneyNetworkW3')
                 return s ;
             } // bn_toFixed
 
-
+            // calculate gas fee.
+            // - address to send to
+            // - amount in wei. integer or string with integer
             function estimate_fee (address, amount, cb) {
                 var pgm = service + '.estimate_fee: ' ;
-                var wei_bn, wei_s, transaction, fee ;
+                var wei_bn, wei_s, transaction, fee, error ;
                 if (!ether_wallet) return cb() ;
+                if (!address) address = ether_wallet.address ;
+                if ((typeof amount == 'number') && (amount == Math.round(amount))) ; // OK wei number
+                else if ((typeof amount == 'string') && amount.match(/^[0-9]+$/)) ; // OK wei string
+                else {
+                    error = 'Invalid estimate_fee call. amount must be an integer (wei). amount = ' + amount ;
+                    console.log(pgm + error) ;
+                    throw error ;
+                }
                 wei_bn = new BigNumber(amount) ;
                 wei_s = '0x' + wei_bn.toString(16) ;
                 transaction = {
@@ -241,6 +251,7 @@ angular.module('MoneyNetworkW3')
 
 
             // confirm: true from w3 UI. false in wallet-wallet communication.
+            // amount in ether!
             function send_money (address, amount, confirm, cb) {
                 var pgm = service + '.send_money: ' ;
                 var wei_bn, wei_s, ether_bn, ether_s, optional_confirm_send_money ;
@@ -3001,9 +3012,11 @@ angular.module('MoneyNetworkW3')
 
                     // stack dump in w3 + send JS exception to MN
                     send_exception = function (pgm, e) {
-                        console.log(pgm + e.message);
-                        console.log(e.stack);
-                        return send_response(request.msgtype + ' request failed with JS error ' + e.message) ;
+                        var error ;
+                        error = e.message || e || 'Unknown error';
+                        console.log(pgm + error);
+                        if (e.stack) console.log(pgm, e.stack);
+                        return send_response(request.msgtype + ' request failed with JS error ' + error) ;
                     } ;
 
                     // validate and process incoming json message and process
@@ -3242,32 +3255,41 @@ angular.module('MoneyNetworkW3')
                                 // prepare_mt_request step 3: optional check balance. Only for send money operations
                                 step_3_check_balance = function () {
                                     var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_3_check_balance/' + group_debug_seq + ': ';
+                                    var wei_bn, wei_s ;
                                     if (!send_money_bn) return step_4_get_new_address();
                                     console.log(pgm + 'sending money. check wallet balance. send_money = ' + send_money_bn + ', balance: ', wallet_info.confirmed_balance + ', unconfirmed Balance: ', wallet_info.unconfirmed_balance);
 
-                                    //if (wallet_info.confirmed_balance >= send_money) return step_4_get_new_address(); // OK
-                                    //if (wallet_info.unconfirmed_balance < send_money) send_response('insufficient balance for send money operation(s)');
-                                    //else send_response('insufficient balance confirmed balance for send money operation(s)');
+                                    // estimate fee. using null as dummy address = address for my ether wallet
+                                    try {
+                                        wei_bn = send_money_bn.multipliedBy(wei_factor) ;
+                                        wei_s = bn_toFixed(wei_bn, 0, false) ;
 
-                                    // estimate fee. use dummy address = address for my ether wallet
-                                    etherService.get_address(function(address) {
-                                        etherService.estimate_fee(address, send_money_bn.toString(10), function (fee) {
-                                            var send_money_with_fee_bn, confirmed_balance_bn, unconfirmed_balance_bn ;
-                                            if (!fee) console.log(pgm + 'error. could not estimate gas fee') ;
-                                            if (!fee) fee = 0 ;
-                                            fee = new BigNumber(fee) ;
-                                            send_money_with_fee_bn = send_money_bn.add(fee) ;
-                                            confirmed_balance_bn = new BigNumber(wallet_info.confirmed_balance) ;
-                                            if (confirmed_balance_bn.gte(send_money_with_fee_bn)) return step_4_get_new_address(); // OK
-                                            unconfirmed_balance_bn = new BigNumber(wallet_info.unconfirmed_balance) ;
-                                            if (unconfirmed_balance_bn.lt(send_money_with_fee_bn)) send_response('insufficient balance for send money operation(s)');
-                                            else send_response('insufficient balance confirmed balance for send money operation(s)');
-
-                                        }) ; // estimate_fee callback 2
-
-                                    }) ; // get_address callback 1
-
-
+                                        etherService.estimate_fee(null, wei_s, function (fee) {
+                                            var pgm, send_money_with_fee_bn, confirmed_balance_bn, unconfirmed_balance_bn;
+                                            try {
+                                                pgm = service + '.process_incoming_message.' + request.msgtype + '.step_3_check_balance estimate_fee callback 1/' + group_debug_seq + ': ';
+                                                if (!fee) console.log(pgm + 'error. could not estimate gas fee');
+                                                if (!fee) fee = 0;
+                                                fee = new BigNumber(fee);
+                                                send_money_with_fee_bn = send_money_bn.plus(fee);
+                                                confirmed_balance_bn = new BigNumber(wallet_info.confirmed_balance);
+                                                console.log(pgm + 'send_money_with_fee_bn = ' + send_money_with_fee_bn.toString(10) + ', confirmed_balance_bn = ' + confirmed_balance_bn.toString(10));
+                                                if (confirmed_balance_bn.gte(send_money_with_fee_bn)) return step_4_get_new_address(); // OK
+                                                unconfirmed_balance_bn = new BigNumber(wallet_info.unconfirmed_balance);
+                                                console.log(pgm + 'send_money_with_fee_bn = ' + send_money_with_fee_bn.toString(10) + ', unconfirmed_balance_bn = ' + unconfirmed_balance_bn.toString(10));
+                                                if (unconfirmed_balance_bn.lt(send_money_with_fee_bn)) send_response('insufficient balance for send money operation(s)');
+                                                else send_response('insufficient balance confirmed balance for send money operation(s)');
+                                            }
+                                            catch (e) {
+                                                console.log(pgm, 'exception', e);
+                                                return send_exception(pgm, e)
+                                            }
+                                        }); // estimate_fee callback 1
+                                    }
+                                    catch (e) {
+                                        console.log(pgm, 'exception', e);
+                                        return send_exception(pgm, e)
+                                    }
                                 }; // step_3_check_balance
 
                                 // prepare_mt_request step 2: optional open wallet. wallet must be open before get new address request
@@ -3310,7 +3332,7 @@ angular.module('MoneyNetworkW3')
                                         // wallet not open (not created, not logged in etc)
                                         if (!status.permissions.open_wallet) return send_response('Cannot send money transaction. Open wallet operation is not authorized');
                                         if (!request.open_wallet) return send_response('Cannot send money transaction. Wallet is not open and open_wallet was not requested');
-                                        else if (!status.wallet_id || !status.wallet_password) return send_response('Cannot send money transaction. Wallet is not open and no wallet login was found');
+                                        else if (etherService.is_login_info_missing(status)) return send_response('Cannot send money transaction. Wallet is not open and no wallet login was found');
                                     }
                                     if (request.close_wallet && !status.permissions.close_wallet) return send_response('Cannot send money transaction. Close wallet operation was requested but is not authorized');
                                     console.log(pgm + 'todo: add transactions details in confirm dialog');
@@ -3747,30 +3769,35 @@ angular.module('MoneyNetworkW3')
                                 // check_mt step 4: optional check balance. Only for request money operations
                                 step_4_check_balance = function () {
                                     var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_4_check_balance/' + group_debug_seq + ': ';
+                                    var wei_bn, wei_s ;
                                     if (!send_money_bn) return step_5_get_new_address();
                                     console.log(pgm + 'sending money. check wallet balance. send_money = ' + send_money_bn + ', balance: ', wallet_info.confirmed_balance + ', unconfirmed Balance: ', wallet_info.unconfirmed_balance);
 
-                                    //if (wallet_info.confirmed_balance >= send_money_bn) return step_5_get_new_address(); // OK
-                                    //if (wallet_info.unconfirmed_balance < send_money_bn) send_response('insufficient balance for money request(s)');
-                                    //else send_response('insufficient balance confirmed balance for money request(s)');
+                                    try {
+                                        wei_bn = send_money_bn.multipliedBy(wei_factor) ;
+                                        wei_s = bn_toFixed(wei_bn, 0, false) ;
+                                        etherService.estimate_fee(null, wei_s, function (fee) {
+                                            var pgm, send_money_with_fee_bn, confirmed_balance_bn, unconfirmed_balance_bn ;
+                                            try {
+                                                pgm = service + '.process_incoming_message.' + request.msgtype + '.step_4_check_balance estimate_fee callback/' + group_debug_seq + ': ';
 
-                                    // estimate fee. use dummy address = address for my ether wallet
-                                    etherService.get_address(function(address) {
-                                        etherService.estimate_fee(address, send_money_bn.toString(10), function (fee) {
-                                            var send_money_with_fee_bn, confirmed_balance_bn, unconfirmed_balance_bn ;
-                                            if (!fee) console.log(pgm + 'error. could not estimate gas fee') ;
-                                            if (!fee) fee = 0 ;
-                                            fee = new BigNumber(fee) ;
-                                            send_money_with_fee_bn = send_money_bn.add(fee) ;
-                                            confirmed_balance_bn = new BigNumber(wallet_info.confirmed_balance) ;
-                                            if (confirmed_balance_bn.gte(send_money_with_fee_bn)) return step_5_get_new_address(); // OK
-                                            unconfirmed_balance_bn = new BigNumber(wallet_info.unconfirmed_balance) ;
-                                            if (unconfirmed_balance_bn.lt(send_money_with_fee_bn)) send_response('insufficient balance for money request(s)');
-                                            else send_response('insufficient balance confirmed balance for money request(s)');
+                                                if (!fee) console.log(pgm + 'error. could not estimate gas fee') ;
+                                                if (!fee) fee = 0 ;
+                                                fee = new BigNumber(fee) ;
+                                                send_money_with_fee_bn = send_money_bn.plus(fee) ;
+                                                confirmed_balance_bn = new BigNumber(wallet_info.confirmed_balance) ;
+                                                if (confirmed_balance_bn.gte(send_money_with_fee_bn)) return step_5_get_new_address(); // OK
+                                                unconfirmed_balance_bn = new BigNumber(wallet_info.unconfirmed_balance) ;
+                                                if (unconfirmed_balance_bn.lt(send_money_with_fee_bn)) send_response('insufficient balance for money request(s)');
+                                                else send_response('insufficient balance confirmed balance for money request(s)');
 
-                                        }) ; // estimate_fee callback 2
+                                            }
+                                            catch (e) { return send_exception(pgm, e) }
 
-                                    }) ; // get_address callback 1
+                                        }) ; // estimate_fee callback 1
+
+                                    }
+                                    catch (e) { return send_exception(pgm, e) }
 
                                 }; // step_4_check_balance
 
@@ -3812,7 +3839,7 @@ angular.module('MoneyNetworkW3')
                                         // wallet not open (not created, not logged in etc)
                                         if (!status.permissions.open_wallet) return send_response('Cannot receive money transaction. Open wallet operation is not authorized');
                                         if (!request.open_wallet) return send_response('Cannot receive money transaction. Wallet is not open and open_wallet was not requested');
-                                        else if (!status.wallet_id || !status.wallet_password) return send_response('Cannot receive money transaction. Wallet is not open and no wallet login was found');
+                                        else if (etherService.is_login_info_missing(status)) return send_response('Cannot receive money transaction. Wallet is not open and no wallet login was found');
                                     }
                                     if (request.close_wallet && !status.permissions.close_wallet) return send_response('Cannot receive money transaction. Close wallet operation was requested but is not authorized');
                                     console.log(pgm + 'todo: add transactions details in confirm dialog');
