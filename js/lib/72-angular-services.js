@@ -347,7 +347,18 @@ angular.module('MoneyNetworkW3')
             } // send_money
 
             function get_transaction (transactionid, cb) {
-                transaction(transactionid, cb) ;
+                var pgm = service + '.get_transaction: ' ;
+                try {
+                    provider.getTransaction(transactionid).then(function (transaction) {
+                        var pgm = service + '.get_transaction getTransaction callback: ' ;
+                        console.log(pgm + 'transaction = ' + JSON.stringify(transaction)) ;
+                        cb(null, transaction)
+                    }) ;
+                }
+                catch (e) {
+                    console.log(pgm + 'getTransaction failed', e) ;
+                    cb(e.message, null) ;
+                }
             } // get_transaction
 
             // <== https://www.blocktrail.com/api/docs
@@ -556,7 +567,7 @@ angular.module('MoneyNetworkW3')
                         "pay_results": {
                             "type": 'array',
                             "items": { "type": ['undefined','null','string']},
-                            "description": 'null (receiver is sending), ether transactionid or an error message). One row with each row in w3_check_mt.money_transactions array',
+                            "description": 'null (receiver is sending), ether ether TxHash or an error message). One row with each row in w3_check_mt.money_transactions array',
                             "minItems": 1
                         },
                         "error": { "type": 'string', "description": 'w3_check_mt errors. Inconsistency between transaction in the two wallets.'}
@@ -3413,9 +3424,9 @@ angular.module('MoneyNetworkW3')
                                 send_response(null, function () {
 
                                     try {
-                                        var group_debug_seq, pgm, step_1_check_port, step_2_get_pubkey, step_3_get_pubkey2, step_4_create_session,
-                                            step_5_save_pubkeys_msg, step_6_save_in_ls, step_7_publish, session_info, i,
-                                            money_transactions, encrypt3, reason;
+                                        var group_debug_seq, pgm, step_1_check_port, step_2_get_pubkey, step_3_get_pubkey2,
+                                            step_5_create_session, step_4_save_in_ls, step_6_send_pubkeys_msg, step_7_save_in_ls,
+                                            step_8_publish, session_info, i, money_transactions, encrypt3, reason;
 
                                         // get a new group debug seq for send_mt post processing.
                                         group_debug_seq = MoneyNetworkAPILib.debug_group_operation_start();
@@ -3443,41 +3454,32 @@ angular.module('MoneyNetworkW3')
                                         }
                                         reason = request.msgtype ;
 
-                                        // post send_mt tasks:
-                                        // 1: warning if ZeroNet port is closed. optional files are not distributed. maybe use small normal files as a backup?
-                                        // 2: encryption layer 1. jsencrypt. generate a short jsencrypt key (1024) bits. only used for this transaction
-                                        // 3: encryption layer 2. select random index for cryptmessage public key and find public cryptmessage key
-                                        // 4: send offline pubkeys message to other wallet session encrypted with money_transactionid (encryption layer 3) and
-                                        //    create a <session filename>.0000000000001 file with transaction status encrypted with money_transactionid (encryption layer 3)
-                                        // 5: save transaction in ls
-                                        // 6: publish so that other MN and W3 sessions can new the new optional files
+                                        // post send_mt tasks. create callback chain step 1-8
 
-                                        // create callback chain step 1-7
-
-                                        // send_mt step 7: publish
-                                        step_7_publish = function () {
-                                            var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_7_publish/' + group_debug_seq + ': ';
+                                        // send_mt step 8: publish
+                                        step_8_publish = function () {
+                                            var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_8_publish/' + group_debug_seq + ': ';
                                             console.log(pgm + 'publish pubkeys message for other wallet session. publishing via MN publish queue. max one publish once every 30 seconds');
                                             z_publish({publish: true, reason: reason, group_debug_seq: group_debug_seq});
-                                        }; // step_7_publish
+                                        }; // step_8_publish
 
-                                        // send_mt step 6: save session and money transaction(s) in ls
-                                        step_6_save_in_ls = function () {
-                                            var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_save_in_ls/' + group_debug_seq + ': ';
+                                        // send_mt step 6: update session and money transaction(s) in ls
+                                        step_7_save_in_ls = function () {
+                                            var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_7_save_in_ls/' + group_debug_seq + ': ';
                                             delete session_info.pubkey;
                                             delete session_info.pubkey2;
                                             save_w_session(session_info, {group_debug_seq: group_debug_seq}, function () {
                                                 try {
                                                     console.log(pgm + 'OK. Saved wallet-wallet session information in localStorage');
-                                                    step_7_publish();
+                                                    step_8_publish();
                                                 }
                                                 catch (e) { return send_exception(pgm, e) }
                                             });
-                                        }; // step_6_save_in_ls
+                                        }; // step_7_save_in_ls
 
                                         // send_mt step 5. send offline pubkeys message to other wallet session
-                                        step_5_save_pubkeys_msg = function () {
-                                            var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_5_save_pubkeys_msg/' + group_debug_seq + ': ';
+                                        step_6_send_pubkeys_msg = function () {
+                                            var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_send_pubkeys_msg/' + group_debug_seq + ': ';
                                             var request2, error, options;
                                             request2 = {
                                                 msgtype: 'w3_pubkeys',
@@ -3495,6 +3497,7 @@ angular.module('MoneyNetworkW3')
                                                 group_debug_seq: group_debug_seq
                                             } ;
                                             encrypt3.send_message(request2, options, function (response2, request_filename) {
+                                                var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_send_pubkeys_msg send_message/' + group_debug_seq + ': ';
                                                 try {
                                                     var error;
                                                     if (!response2 || response2.error) {
@@ -3509,15 +3512,15 @@ angular.module('MoneyNetworkW3')
                                                     ls.w_files[request_filename] = true ;
                                                     reason = request_filename ;
                                                     session_info.this_status = options.status ;
-                                                    step_6_save_in_ls();
+                                                    step_7_save_in_ls();
                                                 }
                                                 catch (e) { return send_exception(pgm, e) }
                                             }); // encrypt_json callback
-                                        }; // step_5_save_pubkeys_msg
+                                        }; // step_6_send_pubkeys_msg
 
                                         // send_mt step 4. create wallet to wallet session. expects incoming pubkeys message from other wallet session
-                                        step_4_create_session = function () {
-                                            var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_4_create_session/' + group_debug_seq + ': ';
+                                        step_5_create_session = function () {
+                                            var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_5_create_session/' + group_debug_seq + ': ';
                                             // setup session instance.
                                             // Only using symmetric encryption in first pubkeys message to other wallet session
                                             // this wallet starts the transaction and is the sender in wallet to wallet communication
@@ -3531,8 +3534,19 @@ angular.module('MoneyNetworkW3')
                                                 userid2: session_info.userid2
                                             });
                                             console.log(pgm + 'created wallet-wallet session. waiting for pubkeys message from other wallet session');
-                                            step_5_save_pubkeys_msg();
-                                        }; // step_4_create_session
+                                            step_6_send_pubkeys_msg();
+                                        }; // step_6_create_session
+
+                                        step_4_save_in_ls = function () {
+                                            var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_4_save_in_ls/' + group_debug_seq + ': ';
+                                            save_w_session(session_info, {group_debug_seq: group_debug_seq}, function () {
+                                                try {
+                                                    console.log(pgm + 'OK. Created wallet-wallet session information in localStorage');
+                                                    step_6_send_pubkeys_msg();
+                                                }
+                                                catch (e) { return send_exception(pgm, e) }
+                                            });
+                                        }; // step_4_save_in_ls
 
                                         // send_mt step 3. generate public/private keyset for wallet to wallet communication. cryptMessage. encryption layer 2
                                         step_3_get_pubkey2 = function () {
@@ -3547,7 +3561,7 @@ angular.module('MoneyNetworkW3')
                                                     session_info.pubkey2 = pubkey2;
                                                     console.log(pgm + 'Generated new cryptMessage pubkey/prvkey set');
                                                     // console.log(pgm + 'session_info = ' + JSON.stringify(session_info));
-                                                    step_4_create_session();
+                                                    step_4_save_in_ls();
                                                 }
                                                 catch (e) { return send_exception(pgm, e) }
                                             }); // userPublickey
@@ -5065,7 +5079,7 @@ angular.module('MoneyNetworkW3')
                                                                             console.log(pgm + 'todo: retry, abort or ?')
                                                                         }
                                                                         else {
-                                                                            money_transaction.ether_send_ok = result;
+                                                                            money_transaction.ether_send_ok = result.hash;
                                                                             ether_s = bn_toFixed(ether_bn, 18) ;
                                                                             wei_s = bn_toFixed(wei_bn, 0, true) ;
                                                                             report_error(pgm, [ether_s + ' tETH / ' + wei_s + ' test wei', 'was sent to ' + session_info.contact.alias], {type: 'done'}) ; // new group_debug_seq for notification
@@ -5158,6 +5172,7 @@ angular.module('MoneyNetworkW3')
 
                                         if (session_info.w3_start_mt_received_at) {
                                             // ignore. already received. must be a wallet page load. see load_w_sessions
+                                            console.log(pgm + 'ignore. already received. must be a wallet page load. see load_w_sessions') ;
                                             MoneyNetworkAPILib.debug_group_operation_end(group_debug_seq) ;
                                             return ;
                                         }
@@ -5291,7 +5306,7 @@ angular.module('MoneyNetworkW3')
                                                             }) ;
                                                             return ;
                                                         }
-                                                        else if (request.pay_results[i].match(/[0-9a-f]{64}/)) {
+                                                        else if (request.pay_results[i].match(/^0x[0-9a-f]{64}$/)) {
                                                             // could be a ether transaction id but must be validated in next step
                                                             no_pay_ok++ ;
                                                             money_transaction.ether_receive_ok = request.pay_results[i] ;
@@ -5398,7 +5413,7 @@ angular.module('MoneyNetworkW3')
                                                                     console.log(pgm + 'todo: retry, abort or ?')
                                                                 }
                                                                 else {
-                                                                    money_transaction.ether_send_ok = result;
+                                                                    money_transaction.ether_send_ok = result.hash;
                                                                     ether_s = bn_toFixed(ether_bn, 18) ;
                                                                     wei_s = bn_toFixed(wei_bn, 0, true) ;
                                                                     report_error(pgm, [ether_s + ' tETH / ' + wei_s + ' test wei', 'was sent to ' + session_info.contact.alias], {type: 'done'}) ; // new group_debug_seq for notification
@@ -5425,42 +5440,65 @@ angular.module('MoneyNetworkW3')
                                                         money_transaction = session_info.money_transactions[i];
                                                         if (money_transaction.action != 'Send') throw pgm + 'invalid call. Is receiver and action is not Send' ;
                                                         if (!money_transaction.ether_receive_ok) throw pgm + 'invalid call. No txhash received from sender' ;
+                                                        // check ether transactionid
                                                         etherService.get_transaction(money_transaction.ether_receive_ok, function (err, tx) {
-                                                            var amount_ether, expected_amount, received_amount, j, output, amount_ether, amount_wei ;
+                                                            var expected_amount_ether_bn, expected_amount_ether_s, expected_amount_wei_bn, expected_amount_wei_s,
+                                                                received_amount_ether_bn, received_amount_ether_s, received_amount_wei_bn, received_amount_wei_s ;
                                                             console.log(pgm + 'err = ' + JSON.stringify(err)) ;
                                                             console.log(pgm + 'tx = ' + JSON.stringify(tx)) ;
+                                                            //tx = {
+                                                            //    "hash": "0x802b8dcfc9124b8dba280ec7d1f2cd04ad649f9a1fac3994ecf56c8f9e9f1ca8",
+                                                            //    "blockHash": null,
+                                                            //    "blockNumber": null,
+                                                            //    "transactionIndex": 0,
+                                                            //    "from": "0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
+                                                            //    "gasPrice": {"_bn": "125c95e29"},
+                                                            //    "gasLimit": {"_bn": "16e360"},
+                                                            //    "to": "0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
+                                                            //    "value": {"_bn": "5"},
+                                                            //    "nonce": 13,
+                                                            //    "data": "0x",
+                                                            //    "r": "0xc9afbb3c689a30877544f1c40f716f6a3f8eca73caf6d0967b604bb9cbb1a8c9",
+                                                            //    "s": "0x29872909b95996bd005e79c107632d7408318929ce5d042d17bb7dbf01d2c619",
+                                                            //    "v": 42,
+                                                            //    "creates": null,
+                                                            //    "raw": "0xf8650d850125c95e298316e3609411e15b2b6fdeb6ef411a74eaac8da2bde45c803005802aa0c9afbb3c689a30877544f1c40f716f6a3f8eca73caf6d0967b604bb9cbb1a8c9a029872909b95996bd005e79c107632d7408318929ce5d042d17bb7dbf01d2c619",
+                                                            //    "networkId": 3
+                                                            //};
                                                             if (err) {
                                                                 // get transaction failed. maybe API error. maybe invalid transactionid
                                                                 money_transaction.ether_receive_error = 'Receive money failed. Could not verify received ether transaction ' + money_transaction.ether_receive_ok + '. ether error = ' + err ;
+                                                                delete money_transaction.ether_receive_ok ;
                                                                 return send_or_check_money(i + 1);
                                                             }
                                                             // check tx
                                                             if (!tx) {
                                                                 money_transaction.ether_receive_error = 'Receive money failed. Could not verify received ether transaction ' + money_transaction.ether_receive_ok + '. tx is null' ;
+                                                                delete money_transaction.ether_receive_ok ;
                                                                 return send_or_check_money(i + 1);
                                                             }
-                                                            if (!tx.outputs || !tx.outputs.length) {
-                                                                money_transaction.ether_receive_error = 'Receive money failed. Could not verify received ether transaction ' + money_transaction.ether_receive_ok + '. tx.outputs is empty' ;
+                                                            if (!tx.value || !tx.value._bn) {
+                                                                money_transaction.ether_receive_error = 'Receive money failed. Could not verify received ether transaction ' + money_transaction.ether_receive_ok + '. tx.value._bn is empty' ;
+                                                                delete money_transaction.ether_receive_ok ;
                                                                 return send_or_check_money(i + 1);
                                                             }
                                                             // check amount
-                                                            amount_ether = typeof money_transaction.amount == 'number' ? money_transaction.amount : parseFloat(money_transaction.amount) ;
-                                                            expected_amount = Math.round(amount_ether * wee_factor) ;
-                                                            received_amount = 0 ;
-                                                            for (j=0 ; j<tx.outputs.length ; j++) {
-                                                                output = tx.outputs[j] ;
-                                                                if (output.address == money_transaction.json.address) received_amount = received_amount + output.value ;
-                                                            }
-                                                            console.log(pgm + 'expected_amount = ' + expected_amount + ', received_amount = ' + received_amount) ;
-                                                            if (Math.round(Math.abs(expected_amount - received_amount)) == 0) {
+                                                            expected_amount_ether_bn = new BigNumber(money_transaction.amount) ;
+                                                            expected_amount_wei_bn = expected_amount_ether_bn.multipliedBy(wei_factor) ;
+                                                            received_amount_wei_bn = new BigNumber('0x' + tx.value._bn) ;
+                                                            console.log(pgm + 'expected_amount = ' + expected_amount_wei_bn.toString(10) + ', received_amount = ' + received_amount_wei_bn.toString(10)) ;
+                                                            expected_amount_ether_s = bn_toFixed(expected_amount_ether_bn, 18, true) ;
+                                                            expected_amount_wei_s = bn_toFixed(expected_amount_wei_bn, 0, true) ;
+                                                            if (expected_amount_wei_bn.eq(received_amount_wei_bn)) {
                                                                 console.log(pgm + 'Everything is fine. todo: notification in UI.') ;
-                                                                amount_ether = amount_ether.toFixed(18) ;
-                                                                amount_wei = expected_amount ;
-                                                                report_error(pgm, [amount_ether + ' tETH / ' + amount_wei + ' test wei', 'was received from ' + session_info.contact.alias], {type: 'done'}) ; // use new group_debug_seq for notification
+                                                                report_error(pgm, [expected_amount_ether_s + ' tETH / ' + expected_amount_wei_s + ' test wei', 'was received from ' + session_info.contact.alias], {type: 'done'}) ; // use new group_debug_seq for notification
                                                                 return send_or_check_money(i + 1);
                                                             }
                                                             console.log(pgm + 'error: expected amount <> received amount. todo: notification in UI') ;
-                                                            money_transaction.ether_receive_error = 'Expected ' + expected_amount + ' satoshi. Received ' + received_amount + ' satoshi' ;
+                                                            received_amount_ether_bn = received_amount_wei_bn.dividedBy(wei_factor) ;
+                                                            received_amount_ether_s = bn_toFixed(received_amount_ether_bn, 18, true) ;
+                                                            received_amount_wei_s = bn_toFixed(received_amount_wei_bn, 0, true) ;
+                                                            money_transaction.ether_receive_error = 'Expected ' + expected_amount_ether_s + ' tETH / ' + expected_amount_wei_s + ' test wei. Received ' + received_amount_ether_s + ' tETH / ' + received_amount_wei_s + ' test wei' ;
                                                             send_or_check_money(i + 1);
                                                         }) ;
                                                     } ; // check_money
@@ -5668,7 +5706,7 @@ angular.module('MoneyNetworkW3')
                                                             }) ;
                                                             return ;
                                                         }
-                                                        else if (request.pay_results[i].match(/[0-9a-f]{64}/)) {
+                                                        else if (request.pay_results[i].match(/^0x[0-9a-f]{64}$/)) {
                                                             // could be a ether transaction id but must be validated in next step
                                                             no_pay_ok++ ;
                                                             money_transaction.ether_receive_ok = request.pay_results[i] ;
@@ -5764,9 +5802,30 @@ angular.module('MoneyNetworkW3')
 
                                                         // check ether transactionid
                                                         etherService.get_transaction(money_transaction.ether_receive_ok, function (err, tx) {
-                                                            var amount_ether2, expected_amount, received_amount, j, output, amount_ether, amount_wei ;
+                                                            var expected_amount_ether_bn, expected_amount_ether_s, expected_amount_wei_bn, expected_amount_wei_s,
+                                                                received_amount_ether_bn, received_amount_ether_s, received_amount_wei_bn, received_amount_wei_s ;
                                                             console.log(pgm + 'err = ' + JSON.stringify(err)) ;
                                                             console.log(pgm + 'tx = ' + JSON.stringify(tx)) ;
+                                                            //tx = {
+                                                            //    "hash": "0x802b8dcfc9124b8dba280ec7d1f2cd04ad649f9a1fac3994ecf56c8f9e9f1ca8",
+                                                            //    "blockHash": null,
+                                                            //    "blockNumber": null,
+                                                            //    "transactionIndex": 0,
+                                                            //    "from": "0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
+                                                            //    "gasPrice": {"_bn": "125c95e29"},
+                                                            //    "gasLimit": {"_bn": "16e360"},
+                                                            //    "to": "0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
+                                                            //    "value": {"_bn": "5"},
+                                                            //    "nonce": 13,
+                                                            //    "data": "0x",
+                                                            //    "r": "0xc9afbb3c689a30877544f1c40f716f6a3f8eca73caf6d0967b604bb9cbb1a8c9",
+                                                            //    "s": "0x29872909b95996bd005e79c107632d7408318929ce5d042d17bb7dbf01d2c619",
+                                                            //    "v": 42,
+                                                            //    "creates": null,
+                                                            //    "raw": "0xf8650d850125c95e298316e3609411e15b2b6fdeb6ef411a74eaac8da2bde45c803005802aa0c9afbb3c689a30877544f1c40f716f6a3f8eca73caf6d0967b604bb9cbb1a8c9a029872909b95996bd005e79c107632d7408318929ce5d042d17bb7dbf01d2c619",
+                                                            //    "networkId": 3
+                                                            //};
+
                                                             if (err) {
                                                                 // get transaction failed. maybe API error. maybe invalid transactionid
                                                                 money_transaction.ether_receive_error = 'Receive money failed. Could not verify received ether transaction ' + money_transaction.ether_receive_ok + '. ether error = ' + err ;
@@ -5777,27 +5836,27 @@ angular.module('MoneyNetworkW3')
                                                                 money_transaction.ether_receive_error = 'Receive money failed. Could not verify received ether transaction ' + money_transaction.ether_receive_ok + '. tx is null' ;
                                                                 return check_money(i + 1);
                                                             }
-                                                            if (!tx.outputs || !tx.outputs.length) {
-                                                                money_transaction.ether_receive_error = 'Receive money failed. Could not verify received ether transaction ' + money_transaction.ether_receive_ok + '. tx.outputs is empty' ;
+                                                            if (!tx.value || !tx.value._bn) {
+                                                                money_transaction.ether_receive_error = 'Receive money failed. Could not verify received ether transaction ' + money_transaction.ether_receive_ok + '. tx.value._bn is empty' ;
                                                                 return check_money(i + 1);
                                                             }
                                                             // check amount
-                                                            amount_ether2 = typeof money_transaction.amount == 'number' ? money_transaction.amount : parseFloat(money_transaction.amount) ;
-                                                            expected_amount = Math.round(amount_ether2 * wee_factor) ;
-                                                            received_amount = 0 ;
-                                                            for (j=0 ; j<tx.outputs.length ; j++) {
-                                                                output = tx.outputs[j] ;
-                                                                if (output.address == money_transaction.json.address) received_amount = received_amount + output.value ;
-                                                            }
-                                                            console.log(pgm + 'expected_amount = ' + expected_amount + ', received_amount = ' + received_amount) ;
-                                                            if (Math.round(Math.abs(expected_amount - received_amount)) == 0) {
-                                                                amount_ether = amount_ether2.toFixed(18) ;
-                                                                amount_wei = expected_amount ;
-                                                                report_error(pgm, [amount_ether + ' tETH / ' + amount_wei + ' test wei', 'was received from ' + session_info.contact.alias], {type: 'done'}) ; // use new group_debug_seq for notification
-                                                                return check_money(i + 1);
+                                                            expected_amount_ether_bn = new BigNumber(money_transaction.amount) ;
+                                                            expected_amount_wei_bn = expected_amount_ether_bn.multipliedBy(wei_factor) ;
+                                                            received_amount_wei_bn = new BigNumber('0x' + tx.value._bn) ;
+                                                            console.log(pgm + 'expected_amount = ' + expected_amount_wei_bn.toString(10) + ', received_amount = ' + received_amount_wei_bn.toString(10)) ;
+                                                            expected_amount_ether_s = bn_toFixed(expected_amount_ether_bn, 18, true) ;
+                                                            expected_amount_wei_s = bn_toFixed(expected_amount_wei_bn, 0, true) ;
+                                                            if (expected_amount_wei_bn.eq(received_amount_wei_bn)) {
+                                                                console.log(pgm + 'Everything is fine. todo: notification in UI.') ;
+                                                                report_error(pgm, [expected_amount_ether_s + ' tETH / ' + expected_amount_wei_s + ' test wei', 'was received from ' + session_info.contact.alias], {type: 'done'}) ; // use new group_debug_seq for notification
+                                                                return send_or_check_money(i + 1);
                                                             }
                                                             console.log(pgm + 'error: expected amount <> received amount. todo: notification in UI') ;
-                                                            money_transaction.ether_receive_error = 'Expected ' + expected_amount + ' satoshi. Received ' + received_amount + ' satoshi' ;
+                                                            received_amount_ether_bn = received_amount_wei_bn.dividedBy(wei_factor) ;
+                                                            received_amount_ether_s = bn_toFixed(received_amount_ether_bn, 18, true) ;
+                                                            received_amount_wei_s = bn_toFixed(received_amount_wei_bn, 0, true) ;
+                                                            money_transaction.ether_receive_error = 'Expected ' + expected_amount_ether_s + ' tETH / ' + expected_amount_wei_s + ' test wei. Received ' + received_amount_ether_s + ' tETH / ' + received_amount_wei_s + ' test wei' ;
                                                             check_money(i + 1);
                                                         }) ;
 
