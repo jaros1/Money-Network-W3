@@ -125,17 +125,21 @@ angular.module('MoneyNetworkW3')
                     unconfirmed_balance_wei_bn = new BigNumber(unconfirmed_balance_wei_s) ;
                     provider.getBlockNumber().then(function(blockNumber) {
                         console.log(pgm + "Current block number: " + blockNumber);
-                        // get comfirmed balance. 12 blocks
+                        // get confirmed balance. 12 blocks
                         ether_wallet.getBalance(blockNumber-12).then(function(confirmed_balance) {
                             wallet_info.confirmed_balance = confirmed_balance.toString(10) ;
                             confirmed_balance_wei_s = confirmed_balance.toString(10) ;
                             confirmed_balance_wei_bn = new BigNumber(confirmed_balance_wei_s) ;
-                            unconfirmed_balance_wei_bn = unconfirmed_balance_wei_bn.minus(confirmed_balance_wei_bn) ;
+                            // unconfirmed_balance_wei_bn = unconfirmed_balance_wei_bn.minus(confirmed_balance_wei_bn) ;
                             unconfirmed_balance_wei_s = unconfirmed_balance_wei_bn.toString(10) ;
                             console.log(pgm + 'confirmed balance wei = ' + confirmed_balance_wei_s);
                             console.log(pgm + 'unconfirmed balance wei = ' + unconfirmed_balance_wei_s);
                             wallet_info.unconfirmed_balance = unconfirmed_balance_wei_s ;
                             wallet_info.confirmed_balance = confirmed_balance_wei_s ;
+                            // Current block number: 3041290
+                            // confirmed balance wei = 998278000000000000
+                            // unconfirmed balance wei = -84000001000000
+
                             $rootScope.$apply() ;
                             cb(null) ;
                         }) ; // getBalance callback 3 (confirmed)
@@ -274,56 +278,13 @@ angular.module('MoneyNetworkW3')
                     var wei_s, transaction ;
                     wei_s = '0x' + wei_bn.toString(16) ;
 
-                    //// old method 1: send without estimateGas for transaction
-                    //try {
-                    //    ether_wallet.send(address, wei_s).then(function(transactionHash) {
-                    //        console.log(transactionHash);
-                    //        //transactionHash = {
-                    //        //    "nonce": 0,
-                    //        //    "gasPrice": {"_bn": "491994795"},
-                    //        //    "gasLimit": {"_bn": "16e360"},
-                    //        //    "to": "0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
-                    //        //    "value": {"_bn": "f4240"},
-                    //        //    "data": "0x",
-                    //        //    "v": 41,
-                    //        //    "r": "0xae78fc9f564a80034a29d2b9653d12fe156567d41df1584f463e03145e802ffc",
-                    //        //    "s":"0x24edc9ec2eb7a36ace17c4bd5de6e50485f5ecd87a0be5161b5c6a6a349f7564",
-                    //        //    "chainId":3,
-                    //        //    "from":"0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
-                    //        //    "hash":"0x21cd418b210db467dbd913cbc617aa2e45446b33bf495c43f74ad3db7de2794d"};
-                    //        cb(null, transactionHash)
-                    //    }) ;
-                    //}
-                    //catch (e) {
-                    //    console.log(pgm + 'send failed. error = ' + e.message) ;
-                    //    cb('Send money failed with ' + e.message) ;
-                    //}
-
-                    //// old method 2: create transaction, estimateGas + send transaction
-                    //transaction = {
-                    //    gasLimit: 21000,
-                    //    to: address,
-                    //    value: wei_s
-                    //} ;
-                    //ether_wallet.estimateGas(transaction).then(function(gasEstimate) {
-                    //    console.log(pgm + 'gasEstimate = ' + gasEstimate.toString(10));
-                    //    provider.getGasPrice().then(function(gasPrice) {
-                    //        console.log(pgm + 'gasPrice = ' + gasPrice.toString(10));
-                    //        ether_wallet.sendTransaction(transaction).then(function(transactionHash) {
-                    //            console.log(pgm + 'transactionHash = ' + JSON.stringify(transactionHash));
-                    //            cb(null, transactionHash)
-                    //        }) ; // sendTransaction
-                    //
-                    //    }) ; // getGasPrice callback 3
-                    //
-                    //}) ; // estimateGas callback 2
-
                     // new method 3: estimate_fee + send
                     estimate_fee(address, amount, function (fee) {
                         if (!fee) console.log(pgm + 'error. Could not estimate fee') ;
 
                         ether_wallet.send(address, wei_s).then(function(transactionHash) {
-                            console.log(transactionHash);
+                            console.log(pgm + 'address = ' + JSON.stringify(address) + ', amount = ' + JSON.stringify(amount) + ', fee = ' + JSON.stringify(fee) + ', wei_s = ' + JSON.stringify(wei_s)) ;
+                            console.log(pgm + 'transactionHash = ' + JSON.stringify(transactionHash));
                             //transactionHash = {
                             //    "nonce": 0,
                             //    "gasPrice": {"_bn": "491994795"},
@@ -337,6 +298,9 @@ angular.module('MoneyNetworkW3')
                             //    "chainId":3,
                             //    "from":"0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
                             //    "hash":"0x21cd418b210db467dbd913cbc617aa2e45446b33bf495c43f74ad3db7de2794d"};
+
+                            // todo: display difference between estimated fee and info in transaction hash
+
                             cb(null, transactionHash)
                         }) ; // send callback 2
 
@@ -3998,7 +3962,7 @@ angular.module('MoneyNetworkW3')
                                 elapsed = now - new_money_transactions[request.money_transactionid].timestamp;
                                 if (elapsed > 60000) return send_response('Timeout. Waited ' + Math.round(elapsed / 1000) + ' seconds');
 
-                                // OK send_mt request
+                                // OK start_mt request
                                 console.log(pgm + 'sending OK response to ingoing start_mt request');
                                 send_response(null, function () {
                                     try {

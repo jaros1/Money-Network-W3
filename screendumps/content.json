@@ -1,0 +1,116 @@
+{
+ "address": "1W3EthT2fgD5GQmKp3B3v2uC4qdn1nFpo",
+ "files": {},
+ "files_optional": {
+  "1000-w3-standalone-send-money.png": {
+   "sha512": "4538642966795130ab8767be7a53047bba9c8d3d2e8ef8fb3783087f39cf08d2",
+   "size": 178925
+  },
+  "1010-w3-standalone-confirm-send-money.png": {
+   "sha512": "ecd5a9d0b34c73124e854a2dcc16eb8b39fde47fd73461ecab1858db0a0da347",
+   "size": 102343
+  },
+  "1020-w3-standalone-money-was-sent.png": {
+   "sha512": "7c63ffcfe716d8676306586236d67dbd0b8845a4d33868d6eece8eb8b0b2a3a4",
+   "size": 122961
+  },
+  "1030-w3-query-ether-transaction.png": {
+   "sha512": "3001529f94e97e7454de6dbb17ed3a7b0dbd735cf5b5ee87c7624e3c52667342",
+   "size": 82673
+  },
+  "1040-w3-standalone-receiver-unconfirmed-balance.png": {
+   "sha512": "5c2b454137f8e5eff457c484feb7d2bd677e72bafd96fd51de3daf1410cdf8f6",
+   "size": 114506
+  },
+  "2000-w2-integrated-torando-send-money.png": {
+   "sha512": "9f55d59369e5f839e3bbe5d12b787b1d21ae19f5fcf965f1815ce50cf9935785",
+   "size": 627134
+  },
+  "2000-w3-integrated-torando-send-money.png": {
+   "sha512": "5c9598c6c2f4c5990e45cc565b2fd3392742095c95a9dafdcde025aac3aa70a3",
+   "size": 123119
+  },
+  "2010-w2-integrated-send-ping-to-check-if-torando-wallet-is-open.png": {
+   "sha512": "d85101a0cc9be794b764f5104c03850bf32d6fdf53a738682da543367c4e3b48",
+   "size": 150897
+  },
+  "2010-w3-integrated-send-ping-to-check-if-torando-wallet-is-open.png": {
+   "sha512": "e2be8e82574635ee3022ca149981a03dc63f698a2edac41793c0a3517c7852cf",
+   "size": 121405
+  },
+  "2020-w2-integrated-validating-transaction-in-torando-wallet-and-optional-confirm-transaction.png": {
+   "sha512": "add719d4a86a0be468a35bd08a5498d9aaf189cb3cb4567f2f319e60fdce1aa6",
+   "size": 160596
+  },
+  "2020-w3-integrated-validating-transaction-in-torando-wallet.png": {
+   "sha512": "d845d1984c59db93250eccd3e50367853d0f90c93ce8f5f5353e1728afa7c117",
+   "size": 122354
+  },
+  "2030-w2-integrated-torando-has-sent-message-with-money-to-montreal.png": {
+   "sha512": "e96ed059c9bdd3a5d3d6dd183800c050fd50368ad4f3ebedf1e9465ac387ab3c",
+   "size": 310681
+  },
+  "2030-w3-integrated-torando-has-sent-message-with-money-to-arch-linux.png": {
+   "sha512": "246176ac6fc843eb3de15044815f673415ceefafd04eaa646b23366e66b225e4",
+   "size": 279433
+  },
+  "2100-w2-integrated-montreal-must-approve-incoming-money-transaction.png": {
+   "sha512": "4df282dde612856bb83901866e1e621313ed5e112d3f6b532e90fdc3a6f28ce0",
+   "size": 141509
+  },
+  "2100-w3-integrated-arch-linux-must-approve-incoming-money-transaction.png": {
+   "sha512": "9b3f1ebd15d28a2c9964f2b13ff3b56d625f0035a6306d3fd462f6c251805989",
+   "size": 127683
+  },
+  "2110-w2-integrated-send-ping-to-check-if-montreal-wallet-is-open.png": {
+   "sha512": "fc0e7ff4afe34f7390ae55640f6a34782a6b9ef28b4d3c4866fc461dff95b70c",
+   "size": 136635
+  },
+  "2110-w3-integrated-send-ping-to-check-if-arch-linux-wallet-is-open.png": {
+   "sha512": "df706c5b484106851c603e6d7ea2441f53b8f26764981a681ab0965b63463163",
+   "size": 122019
+  },
+  "2120-w2-integrated-validating-transaction-in-montreal-wallet.png": {
+   "sha512": "312010ca9d5a4527496ebfb717878bb97de91a7c87a00cc84c8d6b89bdcdbcb6",
+   "size": 133745
+  },
+  "2120-w3-integrated-validating-transaction-in-arch-linux-wallet.png": {
+   "sha512": "e96a8943fb80e6e1f9ee6d9a33a821db92bfe9f85407062a575355d4e723e363",
+   "size": 123123
+  },
+  "2130-w2-integrated-money-transaction-started.png": {
+   "sha512": "3c8e3b18ccc1cab4bd680bbe17eda5dab57c888d41cd3e7c0931648c85cd0380",
+   "size": 134482
+  },
+  "2130-w3-integrated-money-transaction-started.png": {
+   "sha512": "119c5834fcdddb7bb2ea37d452fc6beddbd2282c0371474ce6f05bfe24cfadbc",
+   "size": 123473
+  },
+  "2140-w2-integrated-money-was-sent-from-torando-to-montreal.png": {
+   "sha512": "c4512df982e9b4ba025b3b522c287e8532495871de441bd14ad009a3ae059442",
+   "size": 275366
+  },
+  "2140-w3-integrated-money-was-sent-from-torando-to-arch-linux.png": {
+   "sha512": "b533ff19be4e01ed850c74a2898d1a8d004995c29e26d48b9d9a00cdfcd80224",
+   "size": 151218
+  },
+  "2150-w3-integrated-money-was-sent-from-torando-to-arch-linux.png": {
+   "sha512": "96b98cfcf30f4da04045c4c51d07c0ac849240734287b357c921fab74f5bf961",
+   "size": 146403
+  },
+  "2160-w3-integrated-money-was-received-from-torando.png": {
+   "sha512": "46f48beb5afd6ccf480dfff62247279953eebc2816e1c74f5714e591032aff34",
+   "size": 132292
+  },
+  "2170-w3-integrated-money-was-received-from-torando.png": {
+   "sha512": "835f46190342b4b98bdf9f1509f6ab50523947fe4bc052cb379a8e3f88c30bb0",
+   "size": 124947
+  }
+ },
+ "inner_path": "screendumps/content.json",
+ "modified": 1523865941,
+ "optional": ".*.png",
+ "signs": {
+  "1W3EthT2fgD5GQmKp3B3v2uC4qdn1nFpo": "HEv4GE3WJvxvSLBWXF0DbPpwTZmy+jFsWjZ3wg6sRUNmIe/9UOeQZhjmDsApqXsMDPJu5B+3ETQ/6o8Wf8UOsOc="
+ }
+}
