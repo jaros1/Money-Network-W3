@@ -246,7 +246,7 @@ angular.module('MoneyNetworkW3')
                         console.log(pgm + 'gasPrice = ' + gasPrice.toString(10));
                         fee = gasEstimate.mul(gasPrice) ;
                         console.log(pgm + 'fee ' + fee.toString(10) + ' = gasEstimate ' + gasEstimate.toString(10) + ' * gasPrice ' + gasPrice.toString(10)) ;
-                        cb(fee.toString(10)) ;
+                        cb(fee.toString(10), gasEstimate.toString(10), gasPrice.toString(10)) ;
                     }); // getGasPrice callback 2
 
                 }) ; // estimateGas callback 1
@@ -266,6 +266,7 @@ angular.module('MoneyNetworkW3')
                 ether_s = bn_toFixed(ether_bn, 18) ;
 
                 optional_confirm_send_money = function (cb) {
+                    var pgm = service + '.send_money.optional_confirm_send_money: ' ;
                     if (!confirm) return cb() ;
                     // Send 100000 test wei = 0.0000000000001 tETH to 0xee97e4e7c39da4c64426016cc0ce21446595f289c99948dfc04284e7445afeb0?
                     ZeroFrame.cmd("wrapperConfirm", ["Send " + wei_s + ' test wei = ' + ether_s + ' = tETH<br>to ' + address +"?", "OK"], function (confirm) {
@@ -275,36 +276,35 @@ angular.module('MoneyNetworkW3')
                     }) ;
                 } ;
                 optional_confirm_send_money(function() {
+                    var pgm = service + '.send_money optional_confirm_send_money callback 1: ' ;
                     var wei_s, transaction ;
                     wei_s = '0x' + wei_bn.toString(16) ;
 
-                    // new method 3: estimate_fee + send
-                    estimate_fee(address, amount, function (fee) {
-                        if (!fee) console.log(pgm + 'error. Could not estimate fee') ;
+                    // new method 4: estimate_fee + send transaction
+                    estimate_fee(address, amount, function (fee, gas_estimate, gas_price) {
+                        var pgm = service + '.send_money estimate_fee callback 2: ' ;
+                        if (!fee) return cb('error. Could not estimate fee', null) ;
 
-                        ether_wallet.send(address, wei_s).then(function(transactionHash) {
-                            console.log(pgm + 'address = ' + JSON.stringify(address) + ', amount = ' + JSON.stringify(amount) + ', fee = ' + JSON.stringify(fee) + ', wei_s = ' + JSON.stringify(wei_s)) ;
+                        var transaction = {
+                            gasLimit: parseInt(gas_estimate),
+                            gasPrice: utils.bigNumberify(gas_price),
+                            to: address,
+                            data: "0x",
+                            value: ethers.utils.parseEther(ether_s)
+                        };
+
+                        ether_wallet.sendTransaction(transaction).then(function(transactionHash) {
+                            var pgm = service + '.send_money sendTransaction callback 3: ' ;
+                            console.log(pgm + 'address = ' + JSON.stringify(address) + ', amount = ' + JSON.stringify(amount) +
+                                ', wei_s = ' + JSON.stringify(wei_s) + ', fee = ' + JSON.stringify(fee) +
+                                ', gas_estimate = ' + gas_estimate + ', gas_price = ' + gas_price) ;
+                            console.log(pgm + 'transaction = ' + JSON.stringify(transaction)) ;
                             console.log(pgm + 'transactionHash = ' + JSON.stringify(transactionHash));
-                            //transactionHash = {
-                            //    "nonce": 0,
-                            //    "gasPrice": {"_bn": "491994795"},
-                            //    "gasLimit": {"_bn": "16e360"},
-                            //    "to": "0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
-                            //    "value": {"_bn": "f4240"},
-                            //    "data": "0x",
-                            //    "v": 41,
-                            //    "r": "0xae78fc9f564a80034a29d2b9653d12fe156567d41df1584f463e03145e802ffc",
-                            //    "s":"0x24edc9ec2eb7a36ace17c4bd5de6e50485f5ecd87a0be5161b5c6a6a349f7564",
-                            //    "chainId":3,
-                            //    "from":"0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
-                            //    "hash":"0x21cd418b210db467dbd913cbc617aa2e45446b33bf495c43f74ad3db7de2794d"};
 
-                            // todo: display difference between estimated fee and info in transaction hash
+                            cb(null, transactionHash, fee)
+                        }) ; // sendTransaction callback 3
 
-                            cb(null, transactionHash)
-                        }) ; // send callback 2
-
-                    }) ; // estimat_fee callback 1
+                    }) ; // estimate_fee callback 2
 
                 }) ; // optional_confirm_send_money callback 1
 
@@ -3239,7 +3239,7 @@ angular.module('MoneyNetworkW3')
                                         wei_bn = send_money_bn.multipliedBy(wei_factor) ;
                                         wei_s = bn_toFixed(wei_bn, 0, false) ;
 
-                                        etherService.estimate_fee(null, wei_s, function (fee) {
+                                        etherService.estimate_fee(null, wei_s, function (fee, gas_estimate, gas_price) {
                                             var pgm, send_money_with_fee_bn, confirmed_balance_bn, unconfirmed_balance_bn;
                                             try {
                                                 pgm = service + '.process_incoming_message.' + request.msgtype + '.step_3_check_balance estimate_fee callback 1/' + group_debug_seq + ': ';
@@ -3280,7 +3280,7 @@ angular.module('MoneyNetworkW3')
                                     }
                                     if (request.close_wallet && !status.permissions.close_wallet) return send_response('Cannot send money transaction. Close wallet operation was requested but is not authorized');
                                     console.log(pgm + 'todo: add transactions details in confirm dialog');
-                                    if (!status.permissions.confirm) return step_1_open_wallet();
+                                    if (!status.permissions.confirm) return step_3_check_balance();
 
                                     // calculate fees
                                     optional_calc_send_fee = function (cb) {
@@ -3288,7 +3288,7 @@ angular.module('MoneyNetworkW3')
                                         if (!send_money_bn) return cb() ;
                                         wei_bn = send_money_bn.multipliedBy(wei_factor) ;
                                         wei_s = bn_toFixed(wei_bn, 0, false) ;
-                                        etherService.estimate_fee(null, wei_s, function (fee) {
+                                        etherService.estimate_fee(null, wei_s, function (fee, gas_estimate, gas_price) {
                                             send_fee = fee ;
                                             cb() ;
                                         }) ;
@@ -3298,7 +3298,7 @@ angular.module('MoneyNetworkW3')
                                         if (!request_money_bn) return cb() ;
                                         wei_bn = request_money_bn.multipliedBy(wei_factor) ;
                                         wei_s = bn_toFixed(wei_bn, 0, false) ;
-                                        etherService.estimate_fee(null, wei_s, function (fee) {
+                                        etherService.estimate_fee(null, wei_s, function (fee, gas_estimate, gas_price) {
                                             request_fee = fee ;
                                             cb() ;
                                         }) ;
@@ -3362,7 +3362,7 @@ angular.module('MoneyNetworkW3')
                                                 confirm_status.done = true ;
                                                 if (!confirm) return send_response('money transaction(s) was/were rejected');
                                                 // Money transaction was confirmed. continue
-                                                step_1_open_wallet();
+                                                step_3_check_balance();
                                             }) ;
 
                                             // path 2) confirm box in MN
@@ -3380,7 +3380,7 @@ angular.module('MoneyNetworkW3')
                                                     // response should be OK or timeot
                                                     if (response && !response.error) {
                                                         // Money transaction was confirmed. continue
-                                                        return step_1_open_wallet() ;
+                                                        return step_3_check_balance() ;
                                                     }
                                                     if (response && response.error && response.error.match(/^Timeout /)) {
                                                         // OK. timeout after 50 seconds. No or late user feedback in MN session
@@ -3825,7 +3825,7 @@ angular.module('MoneyNetworkW3')
                                     try {
                                         wei_bn = send_money_bn.multipliedBy(wei_factor) ;
                                         wei_s = bn_toFixed(wei_bn, 0, false) ;
-                                        etherService.estimate_fee(null, wei_s, function (fee) {
+                                        etherService.estimate_fee(null, wei_s, function (fee, gas_estimate, gas_price) {
                                             var pgm, send_money_with_fee_bn, confirmed_balance_bn, unconfirmed_balance_bn ;
                                             try {
                                                 pgm = service + '.process_incoming_message.' + request.msgtype + '.step_4_check_balance estimate_fee callback/' + group_debug_seq + ': ';
@@ -5116,9 +5116,9 @@ angular.module('MoneyNetworkW3')
                                                                 wei_s = bn_toFixed(wei_bn, 0, false) ;
                                                                 money_transaction.ether_send_at = new Date().getTime();
                                                                 // wallet to wallet communication. send money operation has already been confirmed in UI. confirm = false
-                                                                etherService.send_money(money_transaction.json.address, wei_s, false, function (err, result) {
+                                                                etherService.send_money(money_transaction.json.address, wei_s, false, function (err, result, fee) {
                                                                     var pgm = service + '.process_incoming_message.' + request.msgtype + '.send_money send_money callback/' + group_debug_seq + ': ';
-                                                                    var ether_s, wei_s ;
+                                                                    var ether_s, wei_s, fee_wei_bn, fee_ether_bn, fee_ether_s, fee_wei_s ;
                                                                     try {
                                                                         if (err) {
                                                                             if ((typeof err == 'object') && err.message) err = err.message;
@@ -5128,10 +5128,15 @@ angular.module('MoneyNetworkW3')
                                                                             console.log(pgm + 'todo: retry, abort or ?')
                                                                         }
                                                                         else {
+                                                                            console.log(pgm + 'issue #11 Add fee info in send money notifications') ;
                                                                             money_transaction.ether_send_ok = result.hash;
-                                                                            ether_s = bn_toFixed(ether_bn, 18) ;
+                                                                            ether_s = bn_toFixed(ether_bn, 18, true) ;
                                                                             wei_s = bn_toFixed(wei_bn, 0, true) ;
-                                                                            report_error(pgm, [ether_s + ' tETH / ' + wei_s + ' test wei', 'was sent to ' + session_info.contact.alias], {type: 'done'}) ; // new group_debug_seq for notification
+                                                                            fee_wei_bn = new BigNumber(fee) ;
+                                                                            fee_ether_bn = fee_wei_bn.dividedBy(wei_factor) ;
+                                                                            fee_ether_s = bn_toFixed(fee_ether_bn, 18, true) ;
+                                                                            fee_wei_s = bn_toFixed(fee_wei_bn, 0, true) ;
+                                                                            report_error(pgm, [ether_s + ' tETH / ' + wei_s + ' test wei', 'was sent to ' + session_info.contact.alias, 'result = ' + result.hash, 'Fee ' + fee_ether_s + ' tETH / ' + fee_wei_s + ' test wei'], {type: 'done'}) ; // new group_debug_seq for notification
                                                                         }
                                                                         console.log(pgm + 'money_transaction = ' + JSON.stringify(money_transaction));
 
@@ -5452,8 +5457,8 @@ angular.module('MoneyNetworkW3')
                                                             wei_s = bn_toFixed(wei_bn, 0, false) ;
                                                             money_transaction.ether_send_at = new Date().getTime();
                                                             // wallet to wallet communication. send money operation has already been confirmed in UI. confirm = false
-                                                            etherService.send_money(money_transaction.json.address, wei_s, false, function (err, result) {
-                                                                var pgm, ether_s, wei_s, error ;
+                                                            etherService.send_money(money_transaction.json.address, wei_s, false, function (err, result, fee) {
+                                                                var pgm, ether_s, wei_s, error, fee_wei_bn, fee_ether_bn, fee_ether_s, fee_wei_s ;
                                                                 try {
                                                                     pgm = service + '.process_incoming_message.' + request.msgtype + '.send_money send_money callback/' + group_debug_seq + ': ' ;
                                                                     if (err) {
@@ -5464,10 +5469,15 @@ angular.module('MoneyNetworkW3')
                                                                         console.log(pgm + 'todo: retry, abort or ?')
                                                                     }
                                                                     else {
+                                                                        console.log(pgm + 'issue #11 Add fee info in send money notifications') ;
                                                                         money_transaction.ether_send_ok = result.hash;
                                                                         ether_s = bn_toFixed(ether_bn, 18) ;
                                                                         wei_s = bn_toFixed(wei_bn, 0, true) ;
-                                                                        report_error(pgm, [ether_s + ' tETH / ' + wei_s + ' test wei', 'was sent to ' + session_info.contact.alias], {type: 'done'}) ; // new group_debug_seq for notification
+                                                                        fee_wei_bn = new BigNumber(fee) ;
+                                                                        fee_ether_bn = fee_wei_bn.dividedBy(wei_factor) ;
+                                                                        fee_ether_s = bn_toFixed(fee_ether_bn, 18, true) ;
+                                                                        fee_wei_s = bn_toFixed(fee_wei_bn, 0, true) ;
+                                                                        report_error(pgm, [ether_s + ' tETH / ' + wei_s + ' test wei', 'was sent to ' + session_info.contact.alias, 'result = ' + result.hash, 'Fee ' + fee_ether_s + ' tETH / ' + fee_wei_s + ' test wei'], {type: 'done'}) ; // new group_debug_seq for notification
                                                                     }
                                                                     console.log(pgm + 'money_transaction = ' + JSON.stringify(money_transaction));
                                                                     // next money transaction
