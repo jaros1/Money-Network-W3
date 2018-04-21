@@ -2405,7 +2405,27 @@ var MoneyNetworkAPILib = (function () {
                     break ;
                 }
                 if (!hub_added && all_hubs.length) {
-                    console.log(pgm + 'error. cannot start fileGet ' + inner_path) ;
+
+                    // https://github.com/jaros1/Money-Network-W3/issues/13.
+                    // hub added in W3 but all_hubs list was not updated in MN
+                    if (ZeroFrame.merger_sites && ZeroFrame.merger_sites[hub]) {
+                        console.log(pgm + hub + ' must be a new hub added by MN or a wallet site. Refresh all_hubs and try again') ;
+                        get_all_hubs(true, function (all_hubs2) {
+                            var hub_added2, i ;
+                            hub_added2 = false ;
+                            for (i=0 ; i<all_hubs2.length ; i++) {
+                                if (all_hubs2[i].hub != hub) continue ;
+                                hub_added2 = all_hubs2[i].hub_added ;
+                                break ;
+                            }
+                            if (hub_added2) return z_file_get (pgm, options, cb) ; // try again
+                            console.log(pgm + 'error 2. cannot start fileGet ' + inner_path) ;
+                            console.log(pgm + 'hub ' + hub + ' is not in mergerSiteList. all_hubs = ' + JSON.stringify(all_hubs)) ;
+                            return cb(null, {error: hub + ' was not found in mergerSiteList'}) ;
+                        }) ; // get_all_hubs callback
+                        return ;
+                    }
+                    console.log(pgm + 'error 1. cannot start fileGet ' + inner_path) ;
                     console.log(pgm + 'hub ' + hub + ' is not in mergerSiteList. all_hubs = ' + JSON.stringify(all_hubs)) ;
                     return cb(null, {error: hub + ' was not found in mergerSiteList'}) ;
                 }
@@ -5194,6 +5214,7 @@ MoneyNetworkAPI.prototype.send_message = function (request, options, cb) {
                             MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq4, res == 'ok' ? 'OK' : 'Failed. error = ' + JSON.stringify(res));
 
                             // 6: write file
+                            // todo: add timeout.
                             request_filename = this_session_filename + optional + '.' + request_file_timestamp ;
                             inner_path5 = self.this_user_path + request_filename;
                             MoneyNetworkAPILib.debug_group_operation_update(group_debug_seq, {filename: request_filename}) ;
