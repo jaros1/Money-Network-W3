@@ -3,7 +3,7 @@ angular.module('MoneyNetworkW3')
     // etherService and MoneyNetworkW3Service
     // abbreviations:
     // - MN - MoneyNetwork - main site
-    // - W3 - MoneyNetworkW3 - plugin wallet site with ether
+    // - W3 - MoneyNetworkW3 - plugin wallet site with test ether
 
     // https://coderwall.com/p/ngisma/safe-apply-in-angular-js
     // fixing problems in chatCtrl.approve_money_transactions
@@ -30,7 +30,8 @@ angular.module('MoneyNetworkW3')
             var service = 'MoneyNetworkW3Service';
             console.log(service + ' loaded');
 
-            // https://docs.ethers.io/ethers.js ==>
+            // https://docs.ethers.io/ethers.js
+
             var Wallet = ethers.Wallet;
             var providers = ethers.providers;
             var network = providers.networks.ropsten; // Ropsten (the test network)
@@ -136,9 +137,6 @@ angular.module('MoneyNetworkW3')
                             console.log(pgm + 'unconfirmed balance wei = ' + unconfirmed_balance_wei_s);
                             wallet_info.unconfirmed_balance = unconfirmed_balance_wei_s ;
                             wallet_info.confirmed_balance = confirmed_balance_wei_s ;
-                            // Current block number: 3041290
-                            // confirmed balance wei = 998278000000000000
-                            // unconfirmed balance wei = -84000001000000
 
                             $rootScope.$apply() ;
                             cb(null) ;
@@ -325,8 +323,6 @@ angular.module('MoneyNetworkW3')
                 }
             } // get_transaction
 
-            // <== https://www.blocktrail.com/api/docs
-
             // export
             return {
                 get_wallet_info: get_wallet_info,
@@ -364,37 +360,10 @@ angular.module('MoneyNetworkW3')
 
             // for MN <=> W3 integration
             var wallet_info = etherService.get_wallet_info() ;
-            // console.log(service + ': one_hundred_millions = ' + one_hundred_millions) ;
 
             // localStorage wrapper. avoid some ZeroNet callbacks. cache localStorage in ls hash
             // ls.save_login[auth_address] = { choice: '0', '1', '2' or '3', login: <choice 1: encrypted or unencrypted login> }
             var ls = { is_loading: true } ;
-            //ls = [{
-            //    "sessions": {
-            //        "jro@zeroid.bit": {
-            //            "this_pubkey": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCsOMfAvHPTp0K9qZfoItdJ9898\nU3S2gAZZSLuLZ1qMXr1dEnO8AwxS58UvKGwHObT1XQG8WT3Q1/6OGlJms4mYY1rF\nQXzYEV5w0RlcSrMpLz3+nJ7cVb9lYKOO8hHZFWudFRywkYb/aeNh6mAXqrulv92z\noX0S7YMeNd2YrhqefQIDAQAB\n-----END PUBLIC KEY-----",
-            //            "this_pubkey2": "Ahn94vCUvT+S/nefej83M02n/hP8Jvqc8KbxMtdSsT8R",
-            //            "other_pubkey": "-----BEGIN PUBLIC KEY-----\nMIIBITANBgkqhkiG9w0BAQEFAAOCAQ4AMIIBCQKCAQBpQDut223gZcYfGTHxqoal\nDFX4PvQY1riWEPVqiO2eXS3E47XJjRUtMSUqzpb011ZxzauTxSXlTL1uunIykTvN\nmsXaNSq/tPIue0zdVSCN4PrJo5FY5P6SYGviZBLzdHZJYqlNk3QPngrBGJl/VBBp\nToPXmN7hog/9rXEGhPyN7GX2AKy3pPFCkXFC9GDlCoEjt0Pq+y5sF/t4iPXyn878\nirWfYbRPisLjnJGqSe23/c6MhP8CTvnbFvpiBcLES7HQk6hqqBBnLe9NLTABbqXK\n6i1LW6+aZRqOX72mMwU+1LTcbQRIW1nG6rtPhaUqiIzeH0g8B743bjmcJagm1foH\nAgMBAAE=\n-----END PUBLIC KEY-----",
-            //            "other_pubkey2": "A4RQ77ia8qK1b3FW/ERL2HdW33jwCyKqxRwKQLzMw/yu",
-            //            "encrypted_info": "[\"UPvLnGUi2vDpTiUqzfzF+QLKACBDFPycbrRSQf3l7neWclOYDguddp7u4kHAWeb+AXpAdgAg89WakZt3zbPIwc5L+8DsrVG8S74APeEvlRCv5bf5WjHYokT70IZylIg/X+QsUNG9biVYsRSUe6s02+AQJCn2Z3BCNoIyvAfuVEym9A+6knyktoS+ZxFNkwMCvJ/Jki5S0OuQkX4aaOlEt8McOvX2HA==\",\"oteCwG24VjKOOUQxz7wGPQ==\",\"TGXeFTOWPpkz/sMFUcNrifinytHHXGck5pJj6OwHK6h99Y7D+QGVlaVysZvlsZRAnMW4FK7MNlXw7FmNqMAVeLca+Uw6ZML+evjtibYy+UyYFUkNvnJZQLfFuMsQopGi\"]",
-            //            "prvkey": "U2FsdGVkX1/ICZ/rij1Au+VA02bh4KEs7vla2+j4W5HPPyF0DRRjJIZf7p9FpEl4FXZgxEMlKwBrLhZEERMgYu4XOY0zCsqoWkX9WCu13xi4mhrg8IJtmDtqIujSh5ddjQ8VcxT4unvxCQOGpZ7s8H+/A9sTKm7fAqAzOdLpqMaX7u+QE0FibJGiRh2z7kylsPf1u8KIHWjICBMTuNzEvac1ah58fEVpeQgeRzdRxY4zj2Pa8OJRqeFeLJGMADqimnwGuiZ+kMDsQw2y0XO51wZrVoVY0M7kMVA3Vos1skH1/Ug0TLuyrKGQvZo/V7KhevdlwTj5FT9gPCpimXgBCMl+cFKWUQzkRYKx+OdgKFspMFohjLKJ+ZP5xlfXlziypHhgaBMdT6fXEMSGPtHlPeMGqTOna/GqjmCRuI3tUVoTwpER2ryADbUBlnZY4uBEpFWCmsUHYJgT+I0Yx9ZF/e8Zn9qYSp05APnlqVm0IA5Kl0gQGhJfCjIKeVbVeYmEaPKIe+Jc9eKcNx38AG8dUo85KDI1GQYd7iUdmV59ngSFjmP4goBEzkX/EmFck3oMeVTIahHedkyF/V8gIGQY1ouKCJ6ZyKgB9K2OQ3GqzmMNiMbAG6fklLgBPRJxVXb1jYtVCb2qdzFRKT1S9rGHjssIqYBJEU8XmGXwgUxJZPn4gg8JdFFGh6VodoqdJOhZc9FIHk5/E52cL3X+ZbDouErwGhh9a4+pcoR4zXKhuVx0XOKK8Bnfv9Baxgtjo/1KcpPve93L50U9B7E68ToFvdjyCaVjyf/9UKplYy40cO62p+HdkPRw2bOGo6RrjtVsEsvbXxMRYrPh8mD3k4uZvB4FaV+egLPR/NOPsRS+eHohtZndzMPRVbZqVSts5zNvNGSe5dy+vfvR+REoM3shFqM2hhQCk8LzGYplU0Kq3qJYtTe1R3nyOMzCyqaxNNNmP/wXLSo2O26RcsXJp3d+ABFkxB4MSjPSRqyF7bbJ1Cf2cpqAStrjr57w3nRLc235rUeuDVkEcWdTLw0C+dMVU+WtKOgg5BSxeIDuDuXXYcFMtCD0HFyEgxgOxE4Hx8GXgRj41F6nqBrFSK2U87AQeWmA+fRm5I1hLLi1wpKMxErx1rBT/H3PGdstvF9XEiytZsZI04KVTYM9I5FHm/BPGJqrtemyJS70F6yHQ2e2qrkkb9+MXa+SPF2prj4/qWoI",
-            //            "sessionid": "U2FsdGVkX1/hQbcjOztF8NtZk5xb7y+ho/zbceopRMB6g0ok7IjI93PdX6Ip5VS8oOkfQ+xfgudkVLnKI+mhiZzjDlIUqYJi0gdVz+ehLbU="
-            //        }
-            //    }, "save_login": {"jro@zeroid.bit": "2"}
-            //}];
-            //ls = [{
-            //    "sessions": {
-            //        "jro@zeroid.bit": {
-            //            "this_pubkey": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCsOMfAvHPTp0K9qZfoItdJ9898\nU3S2gAZZSLuLZ1qMXr1dEnO8AwxS58UvKGwHObT1XQG8WT3Q1/6OGlJms4mYY1rF\nQXzYEV5w0RlcSrMpLz3+nJ7cVb9lYKOO8hHZFWudFRywkYb/aeNh6mAXqrulv92z\noX0S7YMeNd2YrhqefQIDAQAB\n-----END PUBLIC KEY-----",
-            //            "this_pubkey2": "Ahn94vCUvT+S/nefej83M02n/hP8Jvqc8KbxMtdSsT8R",
-            //            "other_pubkey": "-----BEGIN PUBLIC KEY-----\nMIIBITANBgkqhkiG9w0BAQEFAAOCAQ4AMIIBCQKCAQBpQDut223gZcYfGTHxqoal\nDFX4PvQY1riWEPVqiO2eXS3E47XJjRUtMSUqzpb011ZxzauTxSXlTL1uunIykTvN\nmsXaNSq/tPIue0zdVSCN4PrJo5FY5P6SYGviZBLzdHZJYqlNk3QPngrBGJl/VBBp\nToPXmN7hog/9rXEGhPyN7GX2AKy3pPFCkXFC9GDlCoEjt0Pq+y5sF/t4iPXyn878\nirWfYbRPisLjnJGqSe23/c6MhP8CTvnbFvpiBcLES7HQk6hqqBBnLe9NLTABbqXK\n6i1LW6+aZRqOX72mMwU+1LTcbQRIW1nG6rtPhaUqiIzeH0g8B743bjmcJagm1foH\nAgMBAAE=\n-----END PUBLIC KEY-----",
-            //            "other_pubkey2": "A4RQ77ia8qK1b3FW/ERL2HdW33jwCyKqxRwKQLzMw/yu",
-            //            "encrypted_info": "[\"UPvLnGUi2vDpTiUqzfzF+QLKACBDFPycbrRSQf3l7neWclOYDguddp7u4kHAWeb+AXpAdgAg89WakZt3zbPIwc5L+8DsrVG8S74APeEvlRCv5bf5WjHYokT70IZylIg/X+QsUNG9biVYsRSUe6s02+AQJCn2Z3BCNoIyvAfuVEym9A+6knyktoS+ZxFNkwMCvJ/Jki5S0OuQkX4aaOlEt8McOvX2HA==\",\"oteCwG24VjKOOUQxz7wGPQ==\",\"TGXeFTOWPpkz/sMFUcNrifinytHHXGck5pJj6OwHK6h99Y7D+QGVlaVysZvlsZRAnMW4FK7MNlXw7FmNqMAVeLca+Uw6ZML+evjtibYy+UyYFUkNvnJZQLfFuMsQopGi\"]",
-            //            "prvkey": "U2FsdGVkX1/ICZ/rij1Au+VA02bh4KEs7vla2+j4W5HPPyF0DRRjJIZf7p9FpEl4FXZgxEMlKwBrLhZEERMgYu4XOY0zCsqoWkX9WCu13xi4mhrg8IJtmDtqIujSh5ddjQ8VcxT4unvxCQOGpZ7s8H+/A9sTKm7fAqAzOdLpqMaX7u+QE0FibJGiRh2z7kylsPf1u8KIHWjICBMTuNzEvac1ah58fEVpeQgeRzdRxY4zj2Pa8OJRqeFeLJGMADqimnwGuiZ+kMDsQw2y0XO51wZrVoVY0M7kMVA3Vos1skH1/Ug0TLuyrKGQvZo/V7KhevdlwTj5FT9gPCpimXgBCMl+cFKWUQzkRYKx+OdgKFspMFohjLKJ+ZP5xlfXlziypHhgaBMdT6fXEMSGPtHlPeMGqTOna/GqjmCRuI3tUVoTwpER2ryADbUBlnZY4uBEpFWCmsUHYJgT+I0Yx9ZF/e8Zn9qYSp05APnlqVm0IA5Kl0gQGhJfCjIKeVbVeYmEaPKIe+Jc9eKcNx38AG8dUo85KDI1GQYd7iUdmV59ngSFjmP4goBEzkX/EmFck3oMeVTIahHedkyF/V8gIGQY1ouKCJ6ZyKgB9K2OQ3GqzmMNiMbAG6fklLgBPRJxVXb1jYtVCb2qdzFRKT1S9rGHjssIqYBJEU8XmGXwgUxJZPn4gg8JdFFGh6VodoqdJOhZc9FIHk5/E52cL3X+ZbDouErwGhh9a4+pcoR4zXKhuVx0XOKK8Bnfv9Baxgtjo/1KcpPve93L50U9B7E68ToFvdjyCaVjyf/9UKplYy40cO62p+HdkPRw2bOGo6RrjtVsEsvbXxMRYrPh8mD3k4uZvB4FaV+egLPR/NOPsRS+eHohtZndzMPRVbZqVSts5zNvNGSe5dy+vfvR+REoM3shFqM2hhQCk8LzGYplU0Kq3qJYtTe1R3nyOMzCyqaxNNNmP/wXLSo2O26RcsXJp3d+ABFkxB4MSjPSRqyF7bbJ1Cf2cpqAStrjr57w3nRLc235rUeuDVkEcWdTLw0C+dMVU+WtKOgg5BSxeIDuDuXXYcFMtCD0HFyEgxgOxE4Hx8GXgRj41F6nqBrFSK2U87AQeWmA+fRm5I1hLLi1wpKMxErx1rBT/H3PGdstvF9XEiytZsZI04KVTYM9I5FHm/BPGJqrtemyJS70F6yHQ2e2qrkkb9+MXa+SPF2prj4/qWoI",
-            //            "sessionid": "U2FsdGVkX1/hQbcjOztF8NtZk5xb7y+ho/zbceopRMB6g0ok7IjI93PdX6Ip5VS8oOkfQ+xfgudkVLnKI+mhiZzjDlIUqYJi0gdVz+ehLbU="
-            //        }
-            //    }, "save_login": {"jro@zeroid.bit": "2"}
-            //}];
 
             function ls_load() {
                 ZeroFrame.cmd("wrapperGetLocalStorage", [], function (res) {
@@ -735,9 +704,6 @@ angular.module('MoneyNetworkW3')
                 console.log(pgm + 'ls = ' + JSON.stringify(ls)) ;
                 ls_save();
 
-                //// for get_balance request
-                //status.wallet_id = wallet_id ;
-                //status.wallet_password = wallet_password ;
                 setTimeout(load_w_sessions, 0) ;
 
                 // get and add W3 pubkey2 to encryption setup (self encrypt using ZeroNet certificate)
@@ -750,7 +716,7 @@ angular.module('MoneyNetworkW3')
                     save_w3 = function (cb) {
                         var pgm = service + '.save_wallet_login.save_w3: ';
                         var unencrypted_login;
-                        // create unencrypted object with login info
+                        // create unencrypted object with login info. note different wallet initialize methods
                         if (save_wallet_login != '0') {
                             unencrypted_login = { login_method: status.login_method } ;
                             if (status.login_method == '1') unencrypted_login.wallet_private_key = status.wallet_private_key ;
@@ -789,7 +755,7 @@ angular.module('MoneyNetworkW3')
 
                     save_w3(function (unencrypted_login) {
                         var pgm = service + '.save_wallet_login save_w3 callback 2: ';
-                        // update MN localStorage (choice '2' and '3')
+                        // update MN localStorage (choice '2')
                         if (save_wallet_login == '2') {
                             if (!status.sessionid) {
                                 ls.save_login[auth_address] = old_login;
@@ -944,53 +910,6 @@ angular.module('MoneyNetworkW3')
             // todo: changed ZeroId. clear z_cache.
             var z_cache = {} ; // cache some ZeroNet objects: wallet_data_hub, wallet.json
 
-            // fix "Merger site (MoneyNetwork) does not have permission for merged site: xxx" errors
-            // wait for mergerSiteAdd event to finish. see todo: xxxx
-            var new_wallet_hub_cbs = {} ; // hub => array with (fileGet) callbacks waiting for hub to be ready
-
-            // demon. dbQuery. check for any json for new wallet data wallet hub before running any fileGet operations
-            function monitor_first_hub_event () {
-                var pgm = service + '.monitor_first_hub_event: ' ;
-                var w3_query_1, debug_seq ;
-                if (!Object.keys(new_wallet_hub_cbs).length) return ; // no more new wallet hubs to monitor
-
-                w3_query_1 =
-                    "select substr(directory, 1, instr(directory,'/')-1) as hub, count(*) as rows " +
-                    "from json " +
-                    "group by substr(directory, 1, instr(directory,'/')-1);" ;
-                debug_seq = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, 'w3 query 1', 'dbQuery') ;
-                ZeroFrame.cmd("dbQuery", [w3_query_1], function (res) {
-                    var pgm = service + '.monitor_first_hub_event dbQuery callback: ';
-                    var hub, i, cbs, cb;
-                    MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq, (!res || res.error) ? 'Failed. error = ' + JSON.stringify(res) : 'OK');
-                    if (res.error) {
-                        console.log(pgm + "first hub lookup failed: " + res.error);
-                        console.log(pgm + 'w3 query 1 = ' + w3_query_1);
-                        for (hub in new_wallet_hub_cbs) console.log(pgm + 'error: ' + new_wallet_hub_cbs[hub].length + ' callbacks are waiting forever for hub ' + hub) ;
-                        return ;
-                    }
-                    for (i=0 ; i<res.length ; i++) {
-                        hub = res[i].hub ;
-                        if (!new_wallet_hub_cbs[hub]) continue ;
-                        console.log(pgm + 'new user data hub ' + hub + ' is ready. ' + new_wallet_hub_cbs[hub].length + ' fileGet operations are waiting in callback queue. running callbacks now') ;
-                        // move to temporary cbs array
-                        cbs = [] ;
-                        while (new_wallet_hub_cbs[hub].length) {
-                            cb = new_wallet_hub_cbs[hub].shift() ;
-                            cbs.push(cb) ;
-                        }
-                        delete new_wallet_hub_cbs[hub] ;
-                        // run cbs
-                        while (cbs.length) {
-                            cb = cbs.shift() ;
-                            cb() ;
-                        }
-                    }
-                    $timeout(monitor_first_hub_event, 250) ;
-                }) ; // dbQuery callback
-
-            } // monitor_first_hub_event
-
             // ZeroFrame wrappers.
             function z_file_get (pgm, options, cb) {
                 MoneyNetworkAPILib.z_file_get(pgm, options, cb);
@@ -1003,7 +922,7 @@ angular.module('MoneyNetworkW3')
             function get_default_wallet_hub () {
                 var pgm = service + '.get_default_wallet_hub: ' ;
                 var default_wallet_hub, default_hubs, hub, hubs, i ;
-                default_wallet_hub = {hub: '1HXzvtSLuvxZfh6LgdaqTk4FSVf7x8w7NJ', title: 'W3 Wallet data hub 1'} ;
+                default_wallet_hub = {hub: '1W3Et1D5BnqfsXfx2kSx8T61fTPz5V2Ft', title: 'W3 Wallet data hub 1'} ;
                 console.log(pgm + 'ZeroFrame.site_info.content = ' + JSON.stringify(ZeroFrame.site_info.content));
                 if (!ZeroFrame.site_info.content.settings) return default_wallet_hub ;
                 default_hubs = ZeroFrame.site_info.content.settings.default_hubs ;
@@ -1299,7 +1218,6 @@ angular.module('MoneyNetworkW3')
                 if (z_cache.my_wallet_data_hub == true) {
                     // get_my_wallet_hub request is already running. please wait
                     get_my_wallet_hub_cbs.push(cb) ;
-                    console.log(pgm + 'wait. get_my_wallet_hub request is already running. ' + get_my_wallet_hub_cbs.length + ' requests in queue') ;
                     return ;
                 }
                 if (z_cache.my_wallet_data_hub) return cb(z_cache.my_wallet_data_hub, z_cache.other_wallet_data_hub, z_cache.other_wallet_data_hub_title) ;
@@ -1377,7 +1295,7 @@ angular.module('MoneyNetworkW3')
                             step_6_wallet_hub_selected() ;
                             return ;
                         }
-                        console.log(pgm + 'mergerSiteAdd failed. hub = ' + my_wallet_hub + '. error = ' + res) ;
+                        console.log(pgm + 'mergerSiteAdd failed. hub = ' + JSON.stringify(my_wallet_hub) + '. error = ' + res) ;
 
                     }) ; // z_merger_site_add callback
 
@@ -1484,7 +1402,6 @@ angular.module('MoneyNetworkW3')
                             console.log(pgm + 'adding new wallet data hub ' + z_cache.my_wallet_data_hub) ;
                             MoneyNetworkAPILib.z_merger_site_add(z_cache.my_wallet_data_hub, function (res) {
                                 var pgm = service + '.get_my_wallet_hub.step_4_find_wallet_hub z_merger_site_add callback 2: ';
-                                console.log(pgm + 'res = ' + JSON.stringify(res)) ;
                                 if (res != 'ok') console.log(pgm + 'error. mergerSiteAdd ' + z_cache.my_wallet_data_hub + ' failed. res = ' + JSON.stringify(res)) ;
                                 step_6_wallet_hub_selected() ;
                             }); // z_merger_site_add callback 2
@@ -1517,7 +1434,7 @@ angular.module('MoneyNetworkW3')
                         if (res1.error) {
                             console.log(pgm + "json and files compare failed: " + res1.error);
                             console.log(pgm + 'w3 query 9 = ' + w3_query_9);
-                            return step_4_find_wallet_hubs() ;
+                            return step_4_find_wallet_hub() ;
                         }
                         res = {} ;
                         indexed_by_modified = {} ;
@@ -1684,7 +1601,7 @@ angular.module('MoneyNetworkW3')
                     }) ;
                 }; // step_2_get_w3_wallet_data_hubs
 
-                // only first contact. wait for merger permission before calling MoneyNetworkAPILib.get_all_hubs
+                // step 1 : only first contact. wait for merger permission before calling MoneyNetworkAPILib.get_all_hubs
                 step_1_wait_for_merger_permission = function() {
                     if (ZeroFrame.site_info &&
                         ZeroFrame.site_info.settings &&
@@ -1857,6 +1774,7 @@ angular.module('MoneyNetworkW3')
                                             for (i=0 ; i<all_hubs.length ; i++) {
                                                 if (all_hubs[i].hub_type != 'wallet') continue ;
                                                 if (!all_hubs[i].hub_added) continue ;
+                                                if (!all_hubs[i].hub_title) continue ;
                                                 if (!all_hubs[i].hub_title.match(/^W3 /i)) continue;
                                                 if (all_hubs[i].hub == z_cache.my_wallet_data_hub) continue ;
                                                 if (all_hubs[i].peers >= 2) wallet_data_hubs.push(all_hubs[i].hub) ;
@@ -2045,70 +1963,41 @@ angular.module('MoneyNetworkW3')
             } // write_content_json
 
             var get_wallet_json_cbs = [] ; // callbacks waiting for first get_wallet_json request to finish
-            function get_wallet_json (cb) {
-                var pgm = service + '.get_wallet_json: ' ;
-                if (z_cache.wallet_json == true) return get_wallet_json_cbs.push(cb) ; // wait for first get_wallet_json request to finish
-                if (z_cache.wallet_json) return cb(z_cache.wallet_json) ; // wallet.json is already in cache
-                z_cache.wallet_json = true ;
+            function get_wallet_json(cb) {
+                var pgm = service + '.get_wallet_json: ';
+                if (z_cache.wallet_json == true) return get_wallet_json_cbs.push(cb); // wait for first get_wallet_json request to finish
+                if (z_cache.wallet_json) return cb(z_cache.wallet_json); // wallet.json is already in cache
+                z_cache.wallet_json = true;
                 get_user_path(function (user_path) {
-                    var pgm = service + '.get_wallet_json get_user_path callback 1: ' ;
-                    var directory, pos, w3_query_11, debug_seq ;
-
-                    // does content.json exist? slow wallet.json fileGet request if content.json does not yet exist
-                    // todo: fixed an error in MoneyNetworkAPILib. Maybe w2_query_11 is no longer needed!
-                    pos = user_path.indexOf('/') ;
-                    directory = user_path.substr(pos+1, user_path.length-pos-2) ;
-                    // console.log(pgm + 'directory = ' + JSON.stringify(directory)) ;
-                    w3_query_11 = "select * from json " + "where directory = '" + directory + "' and file_name = 'content.json'" ;
-                    console.log(pgm + 'w3_query_11 = ' + w3_query_11) ;
-                    debug_seq = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, 'w3_query_11', 'dbQuery') ;
-                    ZeroFrame.cmd("dbQuery", [w3_query_11], function (res) {
-                        var pgm = service + '.get_wallet_json dbQuery callback 2: ' ;
-                        var extra;
-                        MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq, (!res || res.error) ? 'Failed. error = ' + JSON.stringify(res) : 'OK. Returned ' + res.length + ' rows');
-                        // console.log(pgm + 'res = ' + JSON.stringify(res)) ;
-                        if (res.error) {
-                            console.log(pgm + 'w3_query_11 failed. res = ' + JSON.stringify(res));
-                            console.log(pgm + 'w3_query _11 = ' + w3_query_11);
+                    var pgm = service + '.get_wallet_json get_user_path callback 1: ';
+                    var inner_path;
+                    inner_path = user_path + 'wallet.json';
+                    z_file_get(pgm, {inner_path: inner_path, required: false}, function (wallet_str, extra) {
+                        var pgm = service + '.get_wallet_json z_file_get callback 2: ';
+                        var wallet;
+                        if (!wallet_str) {
+                            console.log(pgm + 'wallet.json was not found. extra = ' + JSON.stringify(extra));
+                            wallet = {};
                         }
-                        // console.log(pgm + 'res = ' + JSON.stringify(res)) ;
-                        if (!res.length) {
-                            console.log(pgm + 'new user. wallet.json and content.json does not yet exists. skipping slow content.json fileGet') ;
-                            z_cache.wallet_json = {} ;
-                            extra = { error: 'content.json does not exist'} ;
-                            cb(z_cache.wallet_json, extra) ;
-                            while (get_wallet_json_cbs.length) { cb = get_wallet_json_cbs.shift() ; cb(z_cache.wallet_json, extra)}
-                            return ;
+                        else {
+                            extra = {};
+                            try {
+                                wallet = JSON.parse(wallet_str);
+                            }
+                            catch (e) {
+                                console.log(pgm + 'ignoring invalid wallet.json file ' + inner_path + '. wallet_str = ' + wallet_str + ', error = ' + e.message);
+                                wallet = {}
+                                extra.error = 'Invalid wallet.json. error = ' + e.message;
+                            }
                         }
-                        // content.json exists. continue with wallet fileGet
-                        var inner_path ;
-                        inner_path = user_path + 'wallet.json' ;
-                        z_file_get(pgm, {inner_path: inner_path, required: false}, function (wallet_str, extra) {
-                            var pgm = service + '.get_wallet_json z_file_get callback 3: ' ;
-                            var wallet ;
-                            if (!wallet_str) {
-                                console.log(pgm + 'wallet.json was not found. extra = ' + JSON.stringify(extra)) ;
-                                wallet = {} ;
-                            }
-                            else {
-                                extra = {} ;
-                                try {
-                                    wallet = JSON.parse(wallet_str) ;
-                                }
-                                catch (e) {
-                                    console.log(pgm + 'ignoring invalid wallet.json file ' + inner_path + '. wallet_str = ' + wallet_str + ', error = ' + e.message) ;
-                                    wallet = {}
-                                    extra.error = 'Invalid wallet.json. error = ' + e.message ;
-                                }
-                            }
-                            z_cache.wallet_json = wallet ;
-                            cb(z_cache.wallet_json, extra) ;
-                            while (get_wallet_json_cbs.length) { cb = get_wallet_json_cbs.shift() ; cb(z_cache.wallet_json, extra)}
-                        }) ; // z_file_get callback 3
-
-                    }) ; // dbQuery callback 2
-
-                }) ; // get_user_path callback 1
+                        z_cache.wallet_json = wallet;
+                        cb(z_cache.wallet_json, extra);
+                        while (get_wallet_json_cbs.length) {
+                            cb = get_wallet_json_cbs.shift();
+                            cb(z_cache.wallet_json, extra)
+                        }
+                    }); // z_file_get callback 2
+                }); // get_user_path callback 1
             } // get_wallet_json
 
             function write_wallet_json(cb) {
@@ -2842,7 +2731,6 @@ angular.module('MoneyNetworkW3')
 
             // end of money transaction processing. cleanup. delete:
             // - public and private keys
-            // -
             function cleanup_session_info (session_info) {
                 delete session_info.ip_external ;
                 delete session_info.prvkey ;
@@ -3077,7 +2965,7 @@ angular.module('MoneyNetworkW3')
                                     return;
                                 }
                             }
-                            catch (e) {return send_exception(pgm, e) } ;
+                            catch (e) {return send_exception(pgm, e) }
                         })() ;
                         return ;
                         // end get_balance
@@ -3124,29 +3012,13 @@ angular.module('MoneyNetworkW3')
                                 if (send_money_bn && (!status.permissions || !status.permissions.send_money)) return send_response('send_money operation is not authorized');
                                 if (request_money_bn && (!status.permissions || !status.permissions.receive_money)) return send_response('receive_money operation is not authorized');
 
-                                //request = {
-                                //    "msgtype": "prepare_mt_request",
-                                //    "money_transactions": [{
-                                //        "action": "Send",
-                                //        "code": "tBTC",
-                                //        "amount": "0.00001"
-                                //    }]
-                                //};
-
-                                // todo: fee calculation?
-
-                                // todo: do some validations without contacting external API (Blocktrails Node.js API)
                                 // 1) send money: check amount >= balance
                                 // 2) general: balance - send amount + (request amount-fee) >= 0
                                 // 3) refresh balance before validation
-                                // 4) what about already send but not yet effected money transactions?
-                                //    a) send money: waiting for ether address from other contact
-                                //    b) request money: send ether address to contact. waiting for ether transaction to be submitted to blockchain
-                                // 5) abort send but not yet effected money transactions? abort from wallet / abort from MN / abort from both contacts
-                                // 6) wallet must keep a list of transactions (in process, cancelled and done)
-                                // 7) create a session for direct wallet to wallet communication? (publish is needed when communicating between wallets)
-                                // 8) or use MN chat messages from communication?
-                                // 9) always call get_new_address.
+                                // 4) abort send but not yet effected money transactions? abort from wallet / abort from MN / abort from both contacts
+                                // 5) create a session for direct wallet to wallet communication (publish is needed when communicating between wallets)
+                                // 6) or use MN chat messages from communication?
+                                // 7) always call get_address.
                                 //    - send money: return address in case of aborted operation after send money request has been sent to external API
                                 //    - request money: address for send money operation
 
@@ -3167,30 +3039,6 @@ angular.module('MoneyNetworkW3')
                                         response: response
                                     };
                                     console.log(pgm + 'new_money_transactions = ' + JSON.stringify(new_money_transactions));
-                                    //new_money_transactions = {
-                                    //    "vjbhtHwEfZUY4iF01hLHH9QBrm02pzslSqshK0Pu6G1QLEoKsFaJcwKiKvef": {
-                                    //        "timestamp": 1508082035393,
-                                    //        "request": {
-                                    //            "msgtype": "prepare_mt_request",
-                                    //            "contact": {
-                                    //                "alias": "jro test",
-                                    //                "cert_user_id": "jro@zeroid.bit",
-                                    //                "auth_address": "18DbeZgtVCcLghmtzvg4Uv8uRQAwR8wnDQ"
-                                    //            },
-                                    //            "open_wallet": true,
-                                    //            "money_transactions": [{
-                                    //                "action": "Send",
-                                    //                "code": "tBTC",
-                                    //                "amount": 0.0001
-                                    //            }],
-                                    //            "money_transactionid": "vjbhtHwEfZUY4iF01hLHH9QBrm02pzslSqshK0Pu6G1QLEoKsFaJcwKiKvef"
-                                    //        },
-                                    //        "response": {
-                                    //            "msgtype": "prepare_mt_response",
-                                    //            "jsons": [{"return_address": "2N7YjtMs4irTnudkKwzxBMBaimhiKCuEKK4"}]
-                                    //        }
-                                    //    }
-                                    //};
 
                                     send_response();
                                 }; // step_6_done_ok
@@ -3458,7 +3306,7 @@ angular.module('MoneyNetworkW3')
 
                                     try {
                                         var group_debug_seq, pgm, step_1_check_port, step_2_get_pubkey, step_3_get_pubkey2,
-                                            step_5_create_session, step_4_save_in_ls, step_6_send_pubkeys_msg, step_7_save_in_ls,
+                                            step_4_save_in_ls, step_5_create_session, step_6_send_pubkeys_msg, step_7_save_in_ls,
                                             step_8_publish, session_info, i, money_transactions, encrypt3, reason, my_pubkey, my_pubkey2;
 
                                         // get a new group debug seq for send_mt post processing.
@@ -3529,9 +3377,9 @@ angular.module('MoneyNetworkW3')
                                             } ;
                                             try {
                                                 encrypt3.send_message(request2, options, function (response2, request_filename) {
-                                                    var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_send_pubkeys_msg send_message/' + group_debug_seq + ': ';
+                                                    var pgm, error ;
                                                     try {
-                                                        var error;
+                                                        pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_send_pubkeys_msg send_message/' + group_debug_seq + ': ';
                                                         if (!response2 || response2.error) {
                                                             error = ['Money transaction post processing failed', 'pubkeys message was not send', 'error = ' + JSON.stringify(response2)];
                                                             report_error(pgm, error, {group_debug_seq: group_debug_seq}) ;
@@ -3553,14 +3401,12 @@ angular.module('MoneyNetworkW3')
 
                                         }; // step_6_send_pubkeys_msg
 
-                                        // send_mt step 4. create wallet to wallet session. expects incoming pubkeys message from other wallet session
+                                        // send_mt step 5. create wallet to wallet session. expects incoming pubkeys message from other wallet session
                                         step_5_create_session = function () {
                                             var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_5_create_session/' + group_debug_seq + ': ';
                                             // setup session instance.
                                             // Only using symmetric encryption in first pubkeys message to other wallet session
                                             // this wallet starts the transaction and is the sender in wallet to wallet communication
-                                            // todo: 1) add this session keys information to encrypt3
-                                            // todo: 2) encrypt3 instance should be saved in ls and should be restored after page reload (step_5_save_in_ls)
                                             encrypt3 = new MoneyNetworkAPI({
                                                 debug: 'encrypt3',
                                                 sessionid: session_info.money_transactionid,
@@ -3622,7 +3468,6 @@ angular.module('MoneyNetworkW3')
 
                                         // start callback chain
                                         step_1_check_port();
-                                        if ((response.msgtype == 'response') && !response.error) return; // stop. OK send_mt response has already been sent
                                     }
                                     catch (e) { return send_exception(pgm, e) }
                                 }); // send_response callback
@@ -3639,7 +3484,7 @@ angular.module('MoneyNetworkW3')
                         (function check_mt(){
                             try {
                                 var send_money_bn, request_money_bn, jsons, i, money_transaction, step_1_load_session, step_3_confirm,
-                                    step_2_open_wallet, step_4_check_balance, step_5_get_new_address, step_6_done_ok, amount2;
+                                    step_2_open_wallet, step_4_check_balance, step_5_get_new_address, step_6_done, amount2;
 
                                 console.log(pgm + 'request = ' + JSON.stringify(request));
                                 //request = {
@@ -3690,15 +3535,15 @@ angular.module('MoneyNetworkW3')
                                     } // reverse action
                                     jsons.push({});
                                 }
-                                console.log(pgm + 'send_money = ' + send_money_bn + ', request_money = ' + request_money_bn);
+                                console.log(pgm + 'send_money = ' + (send_money_bn ? send_money_bn.toFixed(10) : null) + ', request_money = ' + (request_money_bn ? request_money_bn.toFixed(10) : null));
                                 if (send_money_bn && (!status.permissions || !status.permissions.send_money)) return send_response('send_money operation is not authorized');
                                 if (request_money_bn && (!status.permissions || !status.permissions.receive_money)) return send_response('receive_money operation is not authorized');
                                 // aray with empty jsons - see step_5_get_new_address
                                 console.log(pgm + 'jsons (empty json array) = ' + JSON.stringify(jsons)) ;
 
                                 // check_mt step 6:
-                                step_6_done_ok = function () {
-                                    var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_done_ok/' + group_debug_seq + ': ';
+                                step_6_done = function () {
+                                    var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_done/' + group_debug_seq + ': ';
                                     var error, i, money_transaction;
                                     console.log(pgm + 'request = ' + JSON.stringify(request));
                                     //request = {
@@ -3782,7 +3627,7 @@ angular.module('MoneyNetworkW3')
                                     //};
                                     send_response(null);
 
-                                }; // step_6_done_ok
+                                }; // step_6_done
 
                                 // check_mt step 5: get ether wallet address
                                 // - send money - address to be used in send money operation (return_address is already in request)
@@ -3792,7 +3637,7 @@ angular.module('MoneyNetworkW3')
                                     var money_transaction;
                                     if (!i) i = 0;
                                     console.log(pgm + 'i = ' + i);
-                                    if (i >= request.money_transactions.length) return step_6_done_ok();
+                                    if (i >= request.money_transactions.length) return step_6_done();
                                     money_transaction = request.money_transactions[i];
                                     // check old session info
                                     if ((money_transaction.action == 'Send') && (jsons[i].address)) {
@@ -3803,7 +3648,7 @@ angular.module('MoneyNetworkW3')
                                         // return_address already added. loaded from old session info in step_1_load_session
                                         return step_5_get_new_address(i + 1) ;
                                     }
-                                    // get ether wallet address c
+                                    // get ether wallet address
                                     etherService.get_address(function (error, address) {
                                         try {
                                             if (error) return send_response('Could not find ether wallet address. error = ' + error);
@@ -3863,11 +3708,6 @@ angular.module('MoneyNetworkW3')
                                     if (request.close_wallet && !status.permissions.close_wallet) return send_response('Cannot receive money transaction. Close wallet operation was requested but is not authorized');
                                     console.log(pgm + 'todo: add transactions details in confirm dialog');
                                     if (!status.permissions.confirm) return step_4_check_balance();
-
-                                    // https://github.com/jaros1/Money-Network-W3/issues/16
-                                    // todo: 1) add better confirm text
-                                    // todo: 2) use confirm dialog in MN. Not notification
-                                    // todo: 3) see confirm dialog in prepare_mt_request
 
                                     // calculate fees
                                     optional_calc_send_fee = function (cb) {
@@ -4249,7 +4089,7 @@ angular.module('MoneyNetworkW3')
                                                 // 6: save transaction in ls
                                                 // 7: publish so that other MN and W3 sessions can see the new optional files
 
-                                                // create callback chain step 1-7
+                                                // create callback chain step 1-8
 
                                                 // start_mt step 8: publish
                                                 step_8_publish = function () {
@@ -4261,7 +4101,6 @@ angular.module('MoneyNetworkW3')
                                                 // start_mt step 7. update session and money transaction(s) in ls
                                                 step_7_save_in_ls = function () {
                                                     var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_7_save_in_ls/' + group_debug_seq + ': ';
-                                                    var auth_address;
                                                     save_w_session(session_info, {group_debug_seq: group_debug_seq}, function () {
                                                         try {
                                                             console.log(pgm + 'OK. Updated wallet-wallet session information in localStorage');
@@ -4271,7 +4110,7 @@ angular.module('MoneyNetworkW3')
                                                     });
                                                 }; // step_7_save_in_ls
 
-                                                // start_mt step 6. pubkeys message for other wallet session
+                                                // start_mt step 6. send pubkeys message for other wallet session
                                                 step_6_send_pubkeys_msg = function () {
                                                     var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_send_pubkeys_msg/' + group_debug_seq + ': ';
                                                     var request2, error, optional, options;
@@ -4312,7 +4151,6 @@ angular.module('MoneyNetworkW3')
                                                             }
                                                             catch (e) { return send_exception(pgm, e) }
                                                         }); // send_message callback
-
                                                     }
                                                     catch (e) { return send_exception(pgm, e) }
                                                 }; // step_6_send_pubkeys_msg
@@ -4460,7 +4298,7 @@ angular.module('MoneyNetworkW3')
                                         var filename, re, m ;
                                         if (!content) send_response('System error. Could not find content.json file');
                                         filenames.push('content.json') ;
-                                        for (filename in content.files) filenames.push(filename) ;
+                                        for (filename in content.files) if (filename != 'content.json') filenames.push(filename) ;
                                         re = new RegExp('^[0-9a-f]{10}(-i|-e|-o|-io|-p)\.[0-9]{13}$'); // pattern for MoneyNetworkAPI files.
                                         if (content.files_optional) for (filename in content.files_optional) {
                                             m=filename.match(re)  ;
@@ -4498,7 +4336,7 @@ angular.module('MoneyNetworkW3')
                                     step_2_read_content_json();
                                 }) ;
 
-                                // 2: notification in MN session. xxx
+                                // 2: notification in MN session.
                                 report_error(pgm, 'Please confirm backup request in W3', {log: false, w3: false, type:'info', timeout: 10000}) ;
 
                             }; // step_1_confirm
@@ -4517,7 +4355,7 @@ angular.module('MoneyNetworkW3')
                         (function restore_wallet_backup() {
                             var pgm = service + '.process_incoming_message.' + request.msgtype + '/' + group_debug_seq + ': ';
                             var restore_ls, restore_files, step_1_confirm, step_2_send_ok_response, step_3_notification,
-                                step_4_delete_user_files, step_5_restore_files, step_7_restore_ls, step_8_restart_w3_session,
+                                step_4_delete_user_files, step_5_restore_files, step_6_restore_ls, step_7_restart_w3_session,
                                 user_path;
 
                             // console.log(pgm + 'request = ' + JSON.stringify(request)) ;
@@ -4535,161 +4373,277 @@ angular.module('MoneyNetworkW3')
                             if (!status.permissions || !status.permissions.restore) return send_response('restore operation is not authorized');
 
 
-                            // callback chain:
+                            // callback chain: step 1-7
 
-                            step_8_restart_w3_session = function (group_debug_seq) {
-                                var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_8_restart_w3_session/' + group_debug_seq + ': ';
-                                var job ;
+                            // restore wallet backup step 7
+                            step_7_restart_w3_session = function (group_debug_seq) {
+                                var pgm, job ;
+                                try {
+                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_7_restart_w3_session/' + group_debug_seq + ': ';
+                                    MoneyNetworkAPILib.debug_group_operation_end(group_debug_seq);
 
-                                MoneyNetworkAPILib.debug_group_operation_end(group_debug_seq);
+                                    z_wrapper_notification(['done', 'W3 wallet was restored. Reloading page in 3 seconds']) ;
 
-                                z_wrapper_notification(['done', 'W3 wallet was restored. Reloading page in 3 seconds']) ;
+                                    job = function() { $window.location.reload() } ;
+                                    $timeout(job, 3000) ;
+                                }
+                                catch (e) {
+                                    if (!e) return ; // exception in MoneyNetworkAPI instance
+                                    if (!pgm) pgm = 'restore_wallet_backup/step_7_restart_w2_session' ;
+                                    error = e.message ? e.message : e ;
+                                    console.log(pgm + error);
+                                    if (e.stack) console.log(e.stack);
+                                    report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                    throw(e);
+                                }
+                            } ; // step_7_restart_w3_session
 
-                                job = function() { $window.location.reload() } ;
-                                $timeout(job, 3000) ;
+                            // restore wallet backup step 6
+                            step_6_restore_ls = function (group_debug_seq) {
+                                var pgm ;
+                                try {
+                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_restore_ls/' + group_debug_seq + ': ';
+                                    // todo: should sign and publish content.json after page reload!!!
 
-                            } ; // step_8_restart_w3_session
-
-                            step_7_restore_ls = function (group_debug_seq) {
-                                var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_7_restore_ls/' + group_debug_seq + ': ';
-
-                                // todo: should sign and publish content.json after page reload!!!
-
-                                // mark localStorage as restored. notification after W3 page reload
-                                restore_ls.wallet_backup_restored = {
-                                    now: new Date().getTime(),
-                                    timestamp: request.timestamp,
-                                    filename: request.filename
-                                } ;
-
-                                ZeroFrame.cmd("wrapperSetLocalStorage", [restore_ls], function () {}) ;
-
-                                step_8_restart_w3_session(group_debug_seq) ;
-
-                            } ; // step_7_restore_ls
-
-                            step_5_restore_files = function (group_debug_seq) {
-                                var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_restore_wallet_json/' + group_debug_seq + ': ';
-                                var row ;
-
-                                if (!restore_files || !restore_files.length) return step_7_restore_ls(group_debug_seq) ;
-                                row = restore_files.shift() ;
-                                inner_path = user_path + row.filename ;
-                                z_file_write(pgm, inner_path, btoa(row.content), {group_debug_seq: group_debug_seq}, function (res) {
-                                    if (!res || (res != 'ok')) console.log(pgm + 'fileWrite failed for ' + filename + '. error = ' + JSON.stringify(res)) ;
-                                    step_5_restore_files() ;
-                                }) ;
-
-                            } ; // step_6_restore_wallet_json
-
-                            step_4_delete_user_files = function (group_debug_seq) {
-                                var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_4_delete_user_files/' + group_debug_seq + ': ';
-
-                                z_wrapper_notification(['info', 'W3 wallet restored started. Please wait', 10000]) ;
-
-                                get_content_json(function (content) {
-                                    var delete_files, filename, delete_file ;
-
-                                    if (!content) {
-                                        console.log(pgm + 'error. content.json file has not found. continue with restore of files from backup') ;
-                                        return step_5_restore_files(group_debug_seq) ;
-                                    }
-                                    delete_files = [] ;
-                                    for (filename in content.files) delete_files.push(filename) ;
-                                    if (content.files_optional) for (filename in content.files_optional) delete_files.push(filename) ;
-
-                                    // delete file loop
-                                    delete_file = function() {
-                                        var filename ;
-                                        filename = delete_files.shift() ;
-                                        if (!filename) return step_5_restore_files(group_debug_seq) ; // done. continue to restore
-                                        inner_path = user_path + filename ;
-                                        MoneyNetworkAPILib.z_file_delete(pgm, inner_path, function (res) {
-                                            if (!res || (res != 'ok')) console.log(pgm + 'fileDelete failed for ' + filename + '. error = ' + JSON.stringify(res)) ;
-                                            delete_file() ;
-                                        })
-
+                                    // mark localStorage as restored. notification after W3 page reload
+                                    restore_ls.wallet_backup_restored = {
+                                        now: new Date().getTime(),
+                                        timestamp: request.timestamp,
+                                        filename: request.filename
                                     } ;
-                                    delete_file() ;
-                                }) ; // get_content_json
 
+                                    ZeroFrame.cmd("wrapperSetLocalStorage", [restore_ls], function () {}) ;
+
+                                    step_7_restart_w3_session(group_debug_seq) ;
+                                }
+                                catch (e) {
+                                    if (!e) return ; // exception in MoneyNetworkAPI instance
+                                    if (!pgm) pgm = 'restore_wallet_backup/step_6_restore_ls' ;
+                                    error = e.message ? e.message : e ;
+                                    console.log(pgm + error);
+                                    if (e.stack) console.log(e.stack);
+                                    report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                    throw(e);
+                                }
+                            } ; // step_6_restore_ls
+
+                            // restore wallet backup step 5
+                            step_5_restore_files = function (group_debug_seq) {
+                                var pgm, row ;
+                                try {
+                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_5_restore_files/' + group_debug_seq + ': ';
+                                    if (!restore_files || !restore_files.length) return step_6_restore_ls(group_debug_seq) ;
+                                    row = restore_files.shift() ;
+                                    inner_path = user_path + row.filename ;
+                                    z_file_write(pgm, inner_path, btoa(row.content), {group_debug_seq: group_debug_seq}, function (res) {
+                                        var pgm ;
+                                        try {
+                                            pgm = service + '.process_incoming_message.' + request.msgtype + '.step_5_restore_files z_file_write callback 1/' + group_debug_seq + ': ';
+                                            if (!res || (res != 'ok')) console.log(pgm + 'fileWrite failed for ' + filename + '. error = ' + JSON.stringify(res)) ;
+                                            step_5_restore_files() ;
+                                        }
+                                        catch (e) {
+                                            if (!e) return ; // exception in MoneyNetworkAPI instance
+                                            if (!pgm) pgm = 'restore_wallet_backup/step_5_restore_files 1' ;
+                                            error = e.message ? e.message : e ;
+                                            console.log(pgm + error);
+                                            if (e.stack) console.log(e.stack);
+                                            report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                            throw(e);
+                                        }
+                                    }) ; // z_file_write callback 1
+                                }
+                                catch (e) {
+                                    if (!e) return ; // exception in MoneyNetworkAPI instance
+                                    if (!pgm) pgm = 'restore_wallet_backup/step_5_restore_files 0' ;
+                                    error = e.message ? e.message : e ;
+                                    console.log(pgm + error);
+                                    if (e.stack) console.log(e.stack);
+                                    report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                    throw(e);
+                                }
+                            } ; // step_5_restore_files
+
+                            // restore wallet backup step 4
+                            step_4_delete_user_files = function (group_debug_seq) {
+                                var pgm ;
+                                try {
+                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_4_delete_user_files/' + group_debug_seq + ': ';
+                                    z_wrapper_notification(['info', 'W3 wallet restored started. Please wait', 10000]) ;
+
+                                    get_content_json(function (content) {
+                                        var pgm, delete_files, filename, delete_file ;
+                                        try {
+                                            pgm = service + '.process_incoming_message.' + request.msgtype + '.step_4_delete_user_files get_content_json callback 1/' + group_debug_seq + ': ';
+                                            if (!content) {
+                                                console.log(pgm + 'error. content.json file has not found. continue with restore of files from backup') ;
+                                                return step_5_restore_files(group_debug_seq) ;
+                                            }
+                                            delete_files = [] ;
+                                            for (filename in content.files) delete_files.push(filename) ;
+                                            if (content.files_optional) for (filename in content.files_optional) delete_files.push(filename) ;
+
+                                            // delete file loop
+                                            delete_file = function() {
+                                                var filename ;
+                                                filename = delete_files.shift() ;
+                                                if (!filename) return step_5_restore_files(group_debug_seq) ; // done. continue to restore
+                                                inner_path = user_path + filename ;
+                                                MoneyNetworkAPILib.z_file_delete(pgm, inner_path, function (res) {
+                                                    var pgm ;
+                                                    try {
+                                                        pgm = service + '.process_incoming_message.' + request.msgtype + '.step_4_delete_user_files z_file_delete callback 3/' + group_debug_seq + ': ';
+                                                        if (!res || (res != 'ok')) console.log(pgm + 'fileDelete failed for ' + filename + '. error = ' + JSON.stringify(res)) ;
+                                                        delete_file() ;
+                                                    }
+                                                    catch (e) {
+                                                        if (!e) return ; // exception in MoneyNetworkAPI instance
+                                                        if (!pgm) pgm = 'restore_wallet_backup/step_4_delete_user_files 2' ;
+                                                        error = e.message ? e.message : e ;
+                                                        console.log(pgm + error);
+                                                        if (e.stack) console.log(e.stack);
+                                                        report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                                        throw(e);
+                                                    }
+                                                }); // z_file_delete callback 3
+                                            } ; // delete_file 2
+                                            delete_file() ;
+                                        }
+                                        catch (e) {
+                                            if (!e) return ; // exception in MoneyNetworkAPI instance
+                                            if (!pgm) pgm = 'restore_wallet_backup/step_4_delete_user_files 1' ;
+                                            error = e.message ? e.message : e ;
+                                            console.log(pgm + error);
+                                            if (e.stack) console.log(e.stack);
+                                            report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                            throw(e);
+                                        }
+                                    }) ; // get_content_json callback 1
+                                }
+                                catch (e) {
+                                    if (!e) return ; // exception in MoneyNetworkAPI instance
+                                    if (!pgm) pgm = 'restore_wallet_backup/step_4_delete_user_files 0' ;
+                                    error = e.message ? e.message : e ;
+                                    console.log(pgm + error);
+                                    if (e.stack) console.log(e.stack);
+                                    report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                    throw(e);
+                                }
                             } ; // step_4_delete_user_files
 
+                            // restore wallet backup step 3
                             // notification before restore. restore starts in 10 seconds. should allow MN to read OK response sent in step_2_send_ok_response
                             step_3_notification = function (group_debug_seq) {
-                                var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_3_notification/' + group_debug_seq + ': ';
-                                var job ;
-                                z_wrapper_notification(['info', 'W3 wallet restore starts in 10 seconds. Please wait', 10000]) ;
-                                // wait 10 seconds and start restore
-                                job = function () { step_4_delete_user_files(group_debug_seq)} ;
-                                $timeout(job, 10000) ;
+                                var pgm, job ;
+                                try {
+                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_3_notification/' + group_debug_seq + ': ';
+                                    z_wrapper_notification(['info', 'W3 wallet restore starts in 10 seconds. Please wait', 10000]) ;
+                                    // wait 10 seconds and start restore
+                                    job = function () { step_4_delete_user_files(group_debug_seq)} ;
+                                    $timeout(job, 10000) ;
 
-                                // stop all running operations doing restore
-                                status.restoring = true ;
-                                MoneyNetworkAPILib.clear_all_data() ;
-
+                                    // stop all running operations doing restore
+                                    status.restoring = true ;
+                                    MoneyNetworkAPILib.clear_all_data() ;
+                                    MoneyNetworkAPILib.get_all_hubs(true) ;
+                                }
+                                catch (e) {
+                                    if (!e) return ; // exception in MoneyNetworkAPI instance
+                                    if (!pgm) pgm = 'restore_wallet_backup/step_3_notification' ;
+                                    error = e.message ? e.message : e ;
+                                    console.log(pgm + error);
+                                    if (e.stack) console.log(e.stack);
+                                    report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                    throw(e);
+                                }
                             } ; // step_3_notification
 
+                            // restore wallet backup step 2
                             // optional confirm restore. confirm box in W3. notification to MN. timeout in MN session is 60 seconds. confirm box 45 seconds
                             step_2_send_ok_response = function () {
                                 // send OK response to MN session, wait a few seconds to allow MN to read OK response and start restore process
                                 send_response(null, function () {
+                                    var pgm, group_debug_seq ;
+                                    try {
+                                        // OK restore_wallet_backup response was sent to mn. get a new group debug seq for this start_mt post processing.
+                                        group_debug_seq = MoneyNetworkAPILib.debug_group_operation_start();
+                                        pgm = service + '.process_incoming_message.' + request.msgtype + '.step_2_send_ok_response/' + group_debug_seq + ': ';
+                                        console.log(pgm + 'OK start_mt response was send to MN. continue with restore_wallet_backup post processing');
+                                        console.log(pgm + 'Using group_debug_seq ' + group_debug_seq + ' for this post restore_wallet_backup processing operation');
 
-                                    // OK restore_wallet_backup response was sent to mn. get a new group debug seq for this start_mt post processing.
-                                    var group_debug_seq, pgm;
-                                    group_debug_seq = MoneyNetworkAPILib.debug_group_operation_start();
-                                    var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_2_send_ok_response/' + group_debug_seq + ': ';
-                                    console.log(pgm + 'OK start_mt response was send to MN. continue with restore_wallet_backup post processing');
-                                    console.log(pgm + 'Using group_debug_seq ' + group_debug_seq + ' for this post restore_wallet_backup processing operation');
+                                        console.log(pgm + 'todo: 1) wait a few seconds before starting restore. MN session will wait max 60 seconds for restore_wallet_backup OK response') ;
+                                        console.log(pgm + 'todo: 2) display notification in W3') ;
+                                        console.log(pgm + 'todo: 3) display spinner with countdown in W3') ;
+                                        console.log(pgm + 'todo: 4) delete all old zeronet files') ;
+                                        console.log(pgm + 'todo: 5) write new wallet.json') ;
+                                        console.log(pgm + 'todo: 6) sign and optional publish new wallet.json') ;
+                                        console.log(pgm + 'todo: 7) best with a publish after new MN-W3 session handshake') ;
+                                        console.log(pgm + 'todo: 8) restore localStorage') ;
+                                        console.log(pgm + 'todo: 9) angularJS reload session data / page reload or ?');
 
-                                    console.log(pgm + 'todo: 1) wait a few seconds before starting restore. MN session will wait max 60 seconds for restore_wallet_backup OK response') ;
-                                    console.log(pgm + 'todo: 2) display notification in W3') ;
-                                    console.log(pgm + 'todo: 3) display spinner with countdown in W3') ;
-                                    console.log(pgm + 'todo: 4) delete all old zeronet files') ;
-                                    console.log(pgm + 'todo: 5) write new wallet.json') ;
-                                    console.log(pgm + 'todo: 6) sign and optional publish new wallet.json') ;
-                                    console.log(pgm + 'todo: 7) best with a publish after new MN-W3 session handshake') ;
-                                    console.log(pgm + 'todo: 8) restore localStorage') ;
-                                    console.log(pgm + 'todo: 9) angularJS reload session data / page reload or ?');
-
-                                    get_user_path(function (path) {
-                                        user_path = path ;
-                                        step_3_notification(group_debug_seq) ;
-                                    }) ;
-
-                                }) ;
-
+                                        get_user_path(function (path) {
+                                            try {
+                                                user_path = path ;
+                                                step_3_notification(group_debug_seq) ;
+                                            }
+                                            catch (e) {
+                                                if (!e) return ; // exception in MoneyNetworkAPI instance
+                                                if (!pgm) pgm = 'restore_wallet_backup/send_response 2' ;
+                                                error = e.message ? e.message : e ;
+                                                console.log(pgm + error);
+                                                if (e.stack) console.log(e.stack);
+                                                report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                                throw(e);
+                                            }
+                                        }) ; // get_user_path callback 2
+                                    }
+                                    catch (e) {
+                                        if (!e) return ; // exception in MoneyNetworkAPI instance
+                                        if (!pgm) pgm = 'restore_wallet_backup/send_response 1' ;
+                                        error = e.message ? e.message : e ;
+                                        console.log(pgm + error);
+                                        if (e.stack) console.log(e.stack);
+                                        report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                        throw(e);
+                                    }
+                                }) ; // send_response callback 1
                             }; // step_2_send_ok_response
 
+                            // restore wallet backup step 1
                             // optional confirm restore. See "Confirm backup and restore" checkbox
                             step_1_confirm = function() {
-                                var pgm = service + '.process_incoming_message.' + request.msgtype + '.step_1_confirm/' + group_debug_seq + ': ';
-                                var confirm_status, confirm_timeout_fnk, message ;
-                                if (!status.permissions.confirm_backup_restore) return step_2_send_ok_response() ;
+                                var pgm, confirm_status, confirm_timeout_fnk, message ;
+                                try {
+                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_1_confirm/' + group_debug_seq + ': ';
+                                    if (!status.permissions.confirm_backup_restore) return step_2_send_ok_response() ;
 
-                                // user must confirm backup request in W3
-                                confirm_status = {done: false};
-                                confirm_timeout_fnk = function () {
-                                    if (confirm_status.done) return; // confirm dialog done
-                                    confirm_status.done = true;
-                                    send_response('Confirm backup timeout')
-                                };
-                                setTimeout(confirm_timeout_fnk, 45000);
+                                    // user must confirm backup request in W3
+                                    confirm_status = {done: false};
+                                    confirm_timeout_fnk = function () {
+                                        if (confirm_status.done) return; // confirm dialog done
+                                        confirm_status.done = true;
+                                        send_response('Confirm backup timeout')
+                                    };
+                                    setTimeout(confirm_timeout_fnk, 45000);
 
-                                // 1: confirm dialog in W3
-                                // todo: add restore info: timestamp, filename, size etc
-                                message = 'MN restore request. Allow full W3 localStorage restore.<br>All existing data will be deleted. No way back' ;
-                                ZeroFrame.cmd("wrapperConfirm", [message, 'OK'], function (confirm) {
-                                    if (confirm_status.done) return; // confirm dialog done (OK or timeout)
-                                    confirm_status.done = true ;
-                                    if (!confirm) return send_response('backup request was rejected');
-                                    // restore request was confirmed. continue
-                                    step_2_send_ok_response();
-                                }) ;
+                                    // 1: confirm dialog in W3
+                                    // todo: add restore info: timestamp, filename, size etc
+                                    message = 'MN restore request. Allow full W3 localStorage restore.<br>All existing data will be deleted. No way back' ;
+                                    ZeroFrame.cmd("wrapperConfirm", [message, 'OK'], function (confirm) {
+                                        try {
+                                            if (confirm_status.done) return; // confirm dialog done (OK or timeout)
+                                            confirm_status.done = true ;
+                                            if (!confirm) return send_response('backup request was rejected');
+                                            // restore request was confirmed. continue
+                                            step_2_send_ok_response();
+                                        }
+                                        catch (e) { return send_exception(pgm, e) }
+                                    }) ; // wrapperConfirm callback
 
-                                // 2: notification in MN session. xxx
-                                report_error(pgm, 'Please confirm backup restore in W3', {log: false, w3: false, type:'info', timeout: 10000}) ;
-
+                                    // 2: notification in MN session. xxx
+                                    report_error(pgm, 'Please confirm backup restore in W3', {log: false, w3: false, type:'info', timeout: 10000}) ;
+                                }
+                                catch (e) { return send_exception(pgm, e) }
                             }; // step_1_confirm
 
                             step_1_confirm() ;
@@ -5314,7 +5268,6 @@ angular.module('MoneyNetworkW3')
 
                                         if (session_info.w3_start_mt_received_at) {
                                             // ignore. already received. must be a wallet page load. see load_w_sessions
-                                            console.log(pgm + 'ignore. already received. must be a wallet page load. see load_w_sessions') ;
                                             MoneyNetworkAPILib.debug_group_operation_end(group_debug_seq) ;
                                             return ;
                                         }
@@ -5576,7 +5529,7 @@ angular.module('MoneyNetworkW3')
                                                                     error = e.message ? e.message : e ;
                                                                     console.log(pgm + error);
                                                                     if (e.stack) console.log(e.stack);
-                                                                    report_error(pgm, ['Money transaction failed', "JS exception", e.message], {log: false, group_debug_seq: group_debug_seq}) ;
+                                                                    report_error(pgm, ['Money transaction failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                                                     throw(e);
                                                                 }
                                                             }); // send_money callback
@@ -5587,7 +5540,7 @@ angular.module('MoneyNetworkW3')
                                                             error = e.message ? e.message : e ;
                                                             console.log(pgm + error);
                                                             if (e.stack) console.log(e.stack);
-                                                            report_error(pgm, ['Money transaction failed', "JS exception", e.message], {log: false, group_debug_seq: group_debug_seq}) ;
+                                                            report_error(pgm, ['Money transaction failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                                             throw(e);
                                                         }
                                                     } ; // send_money
@@ -5601,31 +5554,13 @@ angular.module('MoneyNetworkW3')
                                                             if (!money_transaction.ether_receive_ok) throw pgm + 'invalid call. No txhash received from sender' ;
                                                             // check ether transactionid
                                                             etherService.get_transaction(money_transaction.ether_receive_ok, function (err, tx) {
-                                                                var expected_amount_ether_bn, expected_amount_ether_s, expected_amount_wei_bn, expected_amount_wei_s,
+                                                                var pgm, expected_amount_ether_bn, expected_amount_ether_s, expected_amount_wei_bn, expected_amount_wei_s,
                                                                     received_amount_ether_bn, received_amount_ether_s, received_amount_wei_bn, received_amount_wei_s,
                                                                     error ;
                                                                 try {
+                                                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.check_money get_transaction callback/' + group_debug_seq + ': ';
                                                                     console.log(pgm + 'err = ' + JSON.stringify(err)) ;
                                                                     console.log(pgm + 'tx = ' + JSON.stringify(tx)) ;
-                                                                    //tx = {
-                                                                    //    "hash": "0x802b8dcfc9124b8dba280ec7d1f2cd04ad649f9a1fac3994ecf56c8f9e9f1ca8",
-                                                                    //    "blockHash": null,
-                                                                    //    "blockNumber": null,
-                                                                    //    "transactionIndex": 0,
-                                                                    //    "from": "0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
-                                                                    //    "gasPrice": {"_bn": "125c95e29"},
-                                                                    //    "gasLimit": {"_bn": "16e360"},
-                                                                    //    "to": "0x11E15B2B6fdEB6ef411A74eAac8dA2bDE45c8030",
-                                                                    //    "value": {"_bn": "5"},
-                                                                    //    "nonce": 13,
-                                                                    //    "data": "0x",
-                                                                    //    "r": "0xc9afbb3c689a30877544f1c40f716f6a3f8eca73caf6d0967b604bb9cbb1a8c9",
-                                                                    //    "s": "0x29872909b95996bd005e79c107632d7408318929ce5d042d17bb7dbf01d2c619",
-                                                                    //    "v": 42,
-                                                                    //    "creates": null,
-                                                                    //    "raw": "0xf8650d850125c95e298316e3609411e15b2b6fdeb6ef411a74eaac8da2bde45c803005802aa0c9afbb3c689a30877544f1c40f716f6a3f8eca73caf6d0967b604bb9cbb1a8c9a029872909b95996bd005e79c107632d7408318929ce5d042d17bb7dbf01d2c619",
-                                                                    //    "networkId": 3
-                                                                    //};
                                                                     if (err) {
                                                                         // get transaction failed. maybe API error. maybe invalid transactionid
                                                                         money_transaction.ether_receive_error = 'Receive money failed. Could not verify received ether transaction ' + money_transaction.ether_receive_ok + '. ether error = ' + err ;
@@ -5685,7 +5620,6 @@ angular.module('MoneyNetworkW3')
                                                             if (e.stack) console.log(e.stack);
                                                             report_error(pgm, ['Money transaction failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                                             throw(e);
-
                                                         }
                                                     } ; // check_money
 
@@ -5724,13 +5658,10 @@ angular.module('MoneyNetworkW3')
                                                             report_error(pgm, ['Money transaction failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                                             throw(e);
                                                         }
-
                                                     }; // send_or_check_money
                                                     // start send (action=Request) or check (action=Send) money loop
                                                     send_or_check_money(0);
-
                                                 }) ; // optional_open_wallet callback 3
-
                                             }
                                             catch (e) {
                                                 // receive offline message w3_start_mt failed.
@@ -5742,21 +5673,18 @@ angular.module('MoneyNetworkW3')
                                                 report_error(pgm, ['Money transaction failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                                 throw(e);
                                             }
-
                                         }) ; // delete_w3_check_mt_msg callback 2
-
-
                                     }
                                     catch (e) {
                                         // receive offline message w3_start_mt failed.
                                         // notification in w3 and mn UI
                                         if (!e) return ; // exception in MoneyNetworkAPI instance
-                                        console.log(pgm + e.message);
-                                        console.log(e.stack);
-                                        report_error(pgm, ['Money transaction failed', "JS exception", e.message], {log: false, group_debug_seq: group_debug_seq}) ;
+                                        error = e.message ? e.message : e ;
+                                        console.log(pgm + error);
+                                        if (e.stack) console.log(e.stack);
+                                        report_error(pgm, ['Money transaction failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                         throw(e);
                                     }
-
                                 }) ; // read_w_session callback 1
                             }
                             catch (e) {
@@ -5827,7 +5755,6 @@ angular.module('MoneyNetworkW3')
                                                     return report_error(pgm, error, {group_debug_seq: group_debug_seq}) ;
                                                 }
 
-
                                                 // sender to receiver: send w3_cleanup_mt to sender of money transaction. error: w3_end_mt validation error, cb: next step
                                                 send_w3_cleanup_mt = function (error, cb) {
                                                     var request2, options ;
@@ -5878,7 +5805,6 @@ angular.module('MoneyNetworkW3')
                                                         }) ;
                                                     }); // send_message callback
                                                 } ; // send_w3_cleanup_mt
-
 
                                                 // validate w3_end_mt message
                                                 // - pay_results.length == money_transactions.length
@@ -6046,7 +5972,6 @@ angular.module('MoneyNetworkW3')
                                                                     error.splice(1,0, 'from ' + session_info.contact.alias) ;
                                                                     report_error(pgm, error, {type: 'error'}) ; // todo: use new group_debug_seq for notification
                                                                     check_money(i + 1);
-
                                                                 }
                                                                 catch (e) {
                                                                     // receive message w3_end_mt failed.
@@ -6058,7 +5983,6 @@ angular.module('MoneyNetworkW3')
                                                                     throw(e);
                                                                 }
                                                             }) ;
-
                                                         }
                                                         catch (e) {
                                                             // receive message w3_end_mt failed.
@@ -6069,13 +5993,10 @@ angular.module('MoneyNetworkW3')
                                                             report_error(pgm, ['Money transaction failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                                             throw(e);
                                                         }
-
                                                     }; // check_money
                                                     // start check money loop
                                                     check_money(0);
-
                                                 }) ; // optional_open_wallet callback 3
-
                                             }
                                             catch (e) {
                                                 // receive message w3_end_mt failed.
@@ -6087,7 +6008,6 @@ angular.module('MoneyNetworkW3')
                                                 throw(e);
                                             }
                                         }) ; // delete_old_w3_start_mt_msg callback 2
-
                                     }
                                     catch (e) {
                                         // receive message w3_end_mt failed.
@@ -6098,7 +6018,6 @@ angular.module('MoneyNetworkW3')
                                         report_error(pgm, ['Money transaction failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                         throw(e);
                                     }
-
                                 }) ; // read_w_session callback 1
                             }
                             catch (e) {
@@ -6753,27 +6672,8 @@ angular.module('MoneyNetworkW3')
                 request2 = function (cb) {
                     var pgm = service + '.check_merger_permission.request2: ';
                     get_my_wallet_hub(function (hub, other_wallet_data_hub, other_wallet_data_hub_title) {
-
-                        // https://github.com/jaros1/Money-Network-W3/issues/1#issuecomment-375584078
-                        // todo: this change should also be implemented in W2
-                        //var debug_seq ;
-                        //debug_seq = MoneyNetworkAPILib.debug_z_api_operation_start(pgm, null, 'mergerSiteAdd') ;
-                        //ZeroFrame.cmd("mergerSiteAdd", [hub], function (res) {
-                        //    MoneyNetworkAPILib.debug_z_api_operation_end(debug_seq, res == 'ok' ? 'OK' : 'Failed. res = ' + JSON.stringify(res)) ;
-                        //    console.log(pgm + 'res = ', JSON.stringify(res));
-                        //    cb((res == 'ok'));
-                        //});
-
-                        //// add wallet data hub and wait for wallet data hub to be ready
-                        //MoneyNetworkAPILib.z_merger_site_add(hub, function (res) {
-                        //    console.log(pgm + 'res = ', JSON.stringify(res));
-                        //    cb((res == 'ok'));
-                        //}) ;
-
                         // everything should be OK. get_my_wallet_hub checks and adds missing wallet data hubs
-
                         cb(true) ;
-
                     });
                 }; // request2
 
