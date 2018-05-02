@@ -4297,8 +4297,7 @@ angular.module('MoneyNetworkW3')
                                     get_content_json(function (content) {
                                         var filename, re, m ;
                                         if (!content) send_response('System error. Could not find content.json file');
-                                        filenames.push('content.json') ;
-                                        for (filename in content.files) if (filename != 'content.json') filenames.push(filename) ;
+                                        for (filename in content.files) filenames.push(filename) ;
                                         re = new RegExp('^[0-9a-f]{10}(-i|-e|-o|-io|-p)\.[0-9]{13}$'); // pattern for MoneyNetworkAPI files.
                                         if (content.files_optional) for (filename in content.files_optional) {
                                             m=filename.match(re)  ;
@@ -4355,8 +4354,8 @@ angular.module('MoneyNetworkW3')
                         (function restore_wallet_backup() {
                             var pgm = service + '.process_incoming_message.' + request.msgtype + '/' + group_debug_seq + ': ';
                             var restore_ls, restore_files, step_1_confirm, step_2_send_ok_response, step_3_notification,
-                                step_4_delete_user_files, step_5_restore_files, step_6_restore_ls, step_7_restart_w3_session,
-                                user_path;
+                                step_4_delete_user_files,  step_5_clear_cache, step_6_restore_files, step_7_restore_ls,
+                                step_8_restart_w3_session, user_path;
 
                             // console.log(pgm + 'request = ' + JSON.stringify(request)) ;
 
@@ -4373,36 +4372,38 @@ angular.module('MoneyNetworkW3')
                             if (!status.permissions || !status.permissions.restore) return send_response('restore operation is not authorized');
 
 
-                            // callback chain: step 1-7
+                            // callback chain: step 1-8
 
-                            // restore wallet backup step 7
-                            step_7_restart_w3_session = function (group_debug_seq) {
+                            // restore wallet backup step 8
+                            step_8_restart_w3_session = function (group_debug_seq) {
                                 var pgm, job ;
                                 try {
-                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_7_restart_w3_session/' + group_debug_seq + ': ';
+                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_8_restart_w3_session/' + group_debug_seq + ': ';
                                     MoneyNetworkAPILib.debug_group_operation_end(group_debug_seq);
 
                                     z_wrapper_notification(['done', 'W3 wallet was restored. Reloading page in 3 seconds']) ;
 
-                                    job = function() { $window.location.reload() } ;
+                                    job = function() {
+                                        $window.location.reload()
+                                    } ;
                                     $timeout(job, 3000) ;
                                 }
                                 catch (e) {
                                     if (!e) return ; // exception in MoneyNetworkAPI instance
-                                    if (!pgm) pgm = 'restore_wallet_backup/step_7_restart_w2_session' ;
+                                    if (!pgm) pgm = 'restore_wallet_backup/step_8_restart_w2_session' ;
                                     error = e.message ? e.message : e ;
                                     console.log(pgm + error);
                                     if (e.stack) console.log(e.stack);
                                     report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                     throw(e);
                                 }
-                            } ; // step_7_restart_w3_session
+                            } ; // step_8_restart_w3_session
 
-                            // restore wallet backup step 6
-                            step_6_restore_ls = function (group_debug_seq) {
+                            // restore wallet backup step 7
+                            step_7_restore_ls = function (group_debug_seq) {
                                 var pgm ;
                                 try {
-                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_restore_ls/' + group_debug_seq + ': ';
+                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_7_restore_ls/' + group_debug_seq + ': ';
                                     // todo: should sign and publish content.json after page reload!!!
 
                                     // mark localStorage as restored. notification after W3 page reload
@@ -4414,37 +4415,48 @@ angular.module('MoneyNetworkW3')
 
                                     ZeroFrame.cmd("wrapperSetLocalStorage", [restore_ls], function () {}) ;
 
-                                    step_7_restart_w3_session(group_debug_seq) ;
+                                    step_8_restart_w3_session(group_debug_seq) ;
                                 }
                                 catch (e) {
                                     if (!e) return ; // exception in MoneyNetworkAPI instance
-                                    if (!pgm) pgm = 'restore_wallet_backup/step_6_restore_ls' ;
+                                    if (!pgm) pgm = 'restore_wallet_backup/step_7_restore_ls' ;
                                     error = e.message ? e.message : e ;
                                     console.log(pgm + error);
                                     if (e.stack) console.log(e.stack);
                                     report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                     throw(e);
                                 }
-                            } ; // step_6_restore_ls
+                            } ; // step_7_restore_ls
 
-                            // restore wallet backup step 5
-                            step_5_restore_files = function (group_debug_seq) {
-                                var pgm, row ;
+                            // restore wallet backup step 6
+                            step_6_restore_files = function (group_debug_seq) {
+                                var pgm, row, image_base64uri, post_data, json_raw ;
                                 try {
-                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_5_restore_files/' + group_debug_seq + ': ';
-                                    if (!restore_files || !restore_files.length) return step_6_restore_ls(group_debug_seq) ;
+                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_restore_files/' + group_debug_seq + ': ';
+                                    if (!restore_files || !restore_files.length) return step_7_restore_ls(group_debug_seq) ;
                                     row = restore_files.shift() ;
+                                    console.log(pgm + 'restoring ' + row.filename) ;
                                     inner_path = user_path + row.filename ;
-                                    z_file_write(pgm, inner_path, btoa(row.content), {group_debug_seq: group_debug_seq}, function (res) {
+                                    if (row.filename.match(/\.json/)) {
+                                        // json file
+                                        json_raw = unescape(encodeURIComponent(row.content));
+                                        post_data = btoa(json_raw);
+                                    }
+                                    else {
+                                        // not json. assuming image
+                                        image_base64uri = row.content;
+                                        post_data = image_base64uri != null ? image_base64uri.replace(/.*?,/, "") : void 0;
+                                    }
+                                    z_file_write(pgm, inner_path, post_data, {group_debug_seq: group_debug_seq}, function (res) {
                                         var pgm ;
                                         try {
-                                            pgm = service + '.process_incoming_message.' + request.msgtype + '.step_5_restore_files z_file_write callback 1/' + group_debug_seq + ': ';
+                                            pgm = service + '.process_incoming_message.' + request.msgtype + '.step_6_restore_files z_file_write callback 1/' + group_debug_seq + ': ';
                                             if (!res || (res != 'ok')) console.log(pgm + 'fileWrite failed for ' + filename + '. error = ' + JSON.stringify(res)) ;
-                                            step_5_restore_files() ;
+                                            step_6_restore_files() ;
                                         }
                                         catch (e) {
                                             if (!e) return ; // exception in MoneyNetworkAPI instance
-                                            if (!pgm) pgm = 'restore_wallet_backup/step_5_restore_files 1' ;
+                                            if (!pgm) pgm = 'restore_wallet_backup/step_6_restore_files 1' ;
                                             error = e.message ? e.message : e ;
                                             console.log(pgm + error);
                                             if (e.stack) console.log(e.stack);
@@ -4455,14 +4467,64 @@ angular.module('MoneyNetworkW3')
                                 }
                                 catch (e) {
                                     if (!e) return ; // exception in MoneyNetworkAPI instance
-                                    if (!pgm) pgm = 'restore_wallet_backup/step_5_restore_files 0' ;
+                                    if (!pgm) pgm = 'restore_wallet_backup/step_6_restore_files 0' ;
                                     error = e.message ? e.message : e ;
                                     console.log(pgm + error);
                                     if (e.stack) console.log(e.stack);
                                     report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
                                     throw(e);
                                 }
-                            } ; // step_5_restore_files
+                            } ; // step_6_restore_files
+
+                            // restore wallet backup step 5 - clear cache
+                            step_5_clear_cache = function (group_debug_seq) {
+                                var pgm  ;
+                                try {
+                                    pgm = service + '.process_incoming_message.' + request.msgtype + '.step_5_clear_cache/' + group_debug_seq + ': ';
+
+                                    // clear cache and continue with restore
+                                    MoneyNetworkAPILib.clear_all_data() ;
+                                    MoneyNetworkAPILib.config({
+                                        debug: true, ZeroFrame: ZeroFrame, optional: Z_CONTENT_OPTIONAL,
+                                        cb: process_incoming_message, cb_fileget: true, cb_decrypt: true,
+                                        waiting_for_file_publish: waiting_for_file_publish}) ;
+                                    delete z_cache.content_json ;
+                                    delete z_cache.wallet_json ;
+
+                                    MoneyNetworkAPILib.get_all_hubs(true, function () {
+                                        var pgm, filenames, i ;
+                                        try {
+                                            group_debug_seq = MoneyNetworkAPILib.debug_group_operation_start();
+                                            pgm = service + '.process_incoming_message.' + request.msgtype + '.step_5_clear_cache get_all_hubs callback/' + group_debug_seq + ': ';
+                                            console.log(pgm + 'Using group_debug_seq ' + group_debug_seq + ' for this post restore_wallet_backup processing operation');
+
+                                            filenames = [] ;
+                                            if (restore_files && restore_files.length) for (i=0 ; i<restore_files.length ; i++) filenames.push(restore_files[i].filename) ;
+                                            console.log(pgm + 'restoring ' + filenames.join(', ')) ;
+                                            step_6_restore_files(group_debug_seq) ;
+                                        }
+                                        catch (e) {
+                                            if (!e) return ; // exception in MoneyNetworkAPI instance
+                                            if (!pgm) pgm = 'restore_wallet_backup/step_5_clear_cache 1' ;
+                                            error = e.message ? e.message : e ;
+                                            console.log(pgm + error);
+                                            if (e.stack) console.log(e.stack);
+                                            report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                            throw(e);
+                                        }
+                                    }) ; // get_all_hubs callback 1
+                                }
+                                catch (e) {
+                                    if (!e) return ; // exception in MoneyNetworkAPI instance
+                                    if (!pgm) pgm = 'restore_wallet_backup/step_5_clear_cache 0' ;
+                                    error = e.message ? e.message : e ;
+                                    console.log(pgm + error);
+                                    if (e.stack) console.log(e.stack);
+                                    report_error(pgm, ['Restore backup failed', "JS exception", error], {log: false, group_debug_seq: group_debug_seq}) ;
+                                    throw(e);
+                                }
+                            } ; // step_5_clear_cache
+
 
                             // restore wallet backup step 4
                             step_4_delete_user_files = function (group_debug_seq) {
@@ -4477,7 +4539,7 @@ angular.module('MoneyNetworkW3')
                                             pgm = service + '.process_incoming_message.' + request.msgtype + '.step_4_delete_user_files get_content_json callback 1/' + group_debug_seq + ': ';
                                             if (!content) {
                                                 console.log(pgm + 'error. content.json file has not found. continue with restore of files from backup') ;
-                                                return step_5_restore_files(group_debug_seq) ;
+                                                return step_5_clear_cache(group_debug_seq) ;
                                             }
                                             delete_files = [] ;
                                             for (filename in content.files) delete_files.push(filename) ;
@@ -4487,7 +4549,7 @@ angular.module('MoneyNetworkW3')
                                             delete_file = function() {
                                                 var filename ;
                                                 filename = delete_files.shift() ;
-                                                if (!filename) return step_5_restore_files(group_debug_seq) ; // done. continue to restore
+                                                if (!filename) return step_5_clear_cache(group_debug_seq) ; // done. continue to restore
                                                 inner_path = user_path + filename ;
                                                 MoneyNetworkAPILib.z_file_delete(pgm, inner_path, function (res) {
                                                     var pgm ;
@@ -4544,8 +4606,6 @@ angular.module('MoneyNetworkW3')
 
                                     // stop all running operations doing restore
                                     status.restoring = true ;
-                                    MoneyNetworkAPILib.clear_all_data() ;
-                                    MoneyNetworkAPILib.get_all_hubs(true) ;
                                 }
                                 catch (e) {
                                     if (!e) return ; // exception in MoneyNetworkAPI instance
@@ -4640,7 +4700,7 @@ angular.module('MoneyNetworkW3')
                                         catch (e) { return send_exception(pgm, e) }
                                     }) ; // wrapperConfirm callback
 
-                                    // 2: notification in MN session. xxx
+                                    // 2: notification in MN session.
                                     report_error(pgm, 'Please confirm backup restore in W3', {log: false, w3: false, type:'info', timeout: 10000}) ;
                                 }
                                 catch (e) { return send_exception(pgm, e) }
